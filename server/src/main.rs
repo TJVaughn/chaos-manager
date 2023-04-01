@@ -7,7 +7,6 @@ use actix_web::{
 };
 use postgres::Statement;
 use serde::{Deserialize, Serialize};
-// use postgres::{Client, NoTls};
 use tokio;
 use tokio_postgres::{Client, NoTls};
 
@@ -322,9 +321,7 @@ async fn update_many_tasks(_req: HttpRequest, params: web::Json<Vec<Task>>) -> i
 
     let tasks = params.0;
 
-    let mut batch_query: Vec<Statement> = Vec::new();
-
-    for _ in 0..tasks.len() {
+    for i in 0..tasks.len() {
         let statement = client
             .prepare(
                 "UPDATE public.task
@@ -339,10 +336,6 @@ async fn update_many_tasks(_req: HttpRequest, params: web::Json<Vec<Task>>) -> i
             .await
             .expect("Could not prepare query.");
 
-        batch_query.push(statement);
-    }
-
-    for i in 0..batch_query.len() {
         let parsed_task = Task {
             id: tasks[i].id,
             title: tasks[i].title.to_owned(),
@@ -354,7 +347,7 @@ async fn update_many_tasks(_req: HttpRequest, params: web::Json<Vec<Task>>) -> i
         };
         client
             .execute(
-                &batch_query[i],
+                &statement,
                 &[
                     &parsed_task.title,
                     &parsed_task.description,
@@ -369,47 +362,9 @@ async fn update_many_tasks(_req: HttpRequest, params: web::Json<Vec<Task>>) -> i
             .expect("error executing query");
     }
 
-    // match client.batch_execute().await {
-    //     Ok(_data) => {
     return HttpResponse::Ok()
         .content_type("application/json")
         .json("{success: 200}");
-    //     }
-    //     Err(err) => {
-    //         return HttpResponse::Conflict()
-    //             .content_type("application/json")
-    //             .json(err.to_string());
-    //     }
-    // }
-
-    // match client
-    //     .execute(
-    //         "UPDATE public.task
-    //         SET priority = $
-    //         ",
-    //         &[
-    //             &task.title,
-    //             &task.description,
-    //             &task.is_complete,
-    //             &task.priority,
-    //             &task.owner_id,
-    //             &task.category_id,
-    //             &task.id,
-    //         ],
-    //     )
-    //     .await
-    // {
-    //     Ok(_data) => {
-    //         return HttpResponse::Created()
-    //             .content_type("application/json")
-    //             .json(task);
-    //     }
-    //     Err(err) => {
-    //         return HttpResponse::Conflict()
-    //             .content_type("application/json")
-    //             .json(err.to_string());
-    //     }
-    // }
 }
 
 #[delete("/tasks/{id}")]
@@ -485,15 +440,6 @@ async fn get_categories() -> impl Responder {
     return HttpResponse::Ok().json(categories);
 }
 
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
-}
-
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there!")
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
@@ -506,16 +452,13 @@ async fn main() -> std::io::Result<()> {
             .max_age(3600);
         App::new()
             .wrap(cors)
-            .service(hello)
-            .service(echo)
-            .service(get_tasks)
-            .service(get_task_by_id)
-            .service(get_categories)
             .service(create_task)
             .service(update_task)
             .service(update_many_tasks)
+            .service(get_tasks)
+            .service(get_task_by_id)
             .service(delete_task_by_id)
-            .route("/hey", web::get().to(manual_hello))
+            .service(get_categories)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
