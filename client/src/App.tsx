@@ -1,4 +1,4 @@
-import { Component, For, onMount, createSignal } from "solid-js";
+import { Component, For, onMount, createSignal, ParentComponent } from "solid-js";
 import { Routes, Route, A } from "@solidjs/router";
 import styles from "./App.module.css";
 import axios from "axios";
@@ -54,7 +54,7 @@ function apiUtil() {
             });
             return req.data;
         },
-        delete: async function deleteTask<T>(endpoint: string): Promise<T> {
+        delete: async function deletElement<T>(endpoint: string): Promise<T> {
             const req = await axios({
                 url: `http://localhost:8080${endpoint}`,
                 method: "DELETE",
@@ -93,7 +93,7 @@ const Task: Component<{
     index: number;
     startComponent: any;
     endComponent: any;
-    moveTask: CallableFunction;
+    movElement: CallableFunction;
     setEndComponent: CallableFunction;
     handleItemClick: CallableFunction;
     setStartComponent: CallableFunction;
@@ -102,7 +102,7 @@ const Task: Component<{
         props.setStartComponent({ item: props.item, index: props.index });
     };
     const handleDragEnd = () => {
-        props.moveTask(props.startComponent, props.endComponent);
+        props.movElement(props.startComponent, props.endComponent);
     };
 
     const handleDragOver = () => {
@@ -111,7 +111,7 @@ const Task: Component<{
 
     const handleClick = () => {
         console.log(props.item);
-        window.location.href = `/editor/${props.item.id}`;
+        window.location.href = `/editor/task/${props.item.id}`;
     };
     return (
         <div
@@ -126,7 +126,7 @@ const Task: Component<{
                 class={`${styles.taskTitle} ${
                     props.item.is_complete ? styles.taskTitleComplete : ""
                 }`}
-                href={`/editor/${props.item.id}`}
+                href={`/editor/task/${props.item.id}`}
                 onClick={handleClick}
             >
                 {props.item.is_complete ? <s>{props.item.title}</s> : props.item.title}
@@ -172,9 +172,9 @@ const Category: Component<{
             return array;
         }
     };
-    const moveTaskPosition = (
+    const movElementPosition = (
         startComponent: { item: Task; index: number },
-        endComponent: { item: Task; index: number }
+        endComponent: { item: Task; index: number },
     ) => {
         const nCategory = { ...category };
 
@@ -201,14 +201,14 @@ const Category: Component<{
                 nCategory.tasks_done = reorderTaskInArray(
                     category.tasks_done,
                     startComponent.index,
-                    endComponent.index
+                    endComponent.index,
                 );
                 updateCategory(nCategory, categoryIndex);
             } else {
                 nCategory.tasks_todo = reorderTaskInArray(
                     category.tasks_todo,
                     startComponent.index,
-                    endComponent.index
+                    endComponent.index,
                 );
                 updateCategory(nCategory, categoryIndex);
             }
@@ -253,7 +253,10 @@ const Category: Component<{
         <div class={styles.category}>
             <div class={styles.categoryHeader}>{props.category.title}</div>
             <div class={styles.categoryTask}>
-                <For each={props.category.tasks_todo} fallback={<div>No items, add a task</div>}>
+                <For
+                    each={props.category.tasks_todo}
+                    fallback={<div>No items, add a task</div>}
+                >
                     {(item, index) => (
                         <Task
                             item={item}
@@ -263,13 +266,16 @@ const Category: Component<{
                             setEndComponent={setEndComponent}
                             startComponent={startComponent()}
                             endComponent={endComponent()}
-                            moveTask={moveTaskPosition}
+                            movElement={movElementPosition}
                         />
                     )}
                 </For>
                 <AddTaskInput handleInputSubmit={handleInputSubmit} />
                 <hr />
-                <For each={props.category.tasks_done} fallback={<div>Nothin done yet</div>}>
+                <For
+                    each={props.category.tasks_done}
+                    fallback={<div>Nothin done yet</div>}
+                >
                     {(item, index) => (
                         <Task
                             item={item}
@@ -279,7 +285,7 @@ const Category: Component<{
                             setEndComponent={setEndComponent}
                             startComponent={startComponent()}
                             endComponent={endComponent()}
-                            moveTask={moveTaskPosition}
+                            movElement={movElementPosition}
                         />
                     )}
                 </For>
@@ -302,99 +308,146 @@ const TaskEditorCanvas: Component = () => {
     const api = apiUtil();
 
     const [deletePrompt, setDeletePrompt] = createSignal<boolean>(false);
-    const [eTask, setEtask] = createSignal<Task>(defaultTaskState);
+    const [element, setElement] = createSignal<Task>(defaultTaskState);
 
     onMount(async () => {
-        const id = window.location.pathname.split("/editor/")[1];
-        setEtask(await api.get(`/tasks/${id}`));
+        const id = window.location.pathname.split("/editor/task/")[1];
+        console.log(id);
+        setElement(await api.get(`/tasks/${id}`));
     });
 
     const handleSelect = async (value: string) => {
         if (value === "0") {
-            const task = { ...eTask() };
+            const task = { ...element() };
             task.is_complete = false;
-            setEtask(task);
+            setElement(task);
+            await handleSubmit();
             return;
         }
-        const task = { ...eTask() };
+        const task = { ...element() };
         task.is_complete = true;
-        setEtask(task);
+        setElement(task);
+        await handleSubmit();
     };
 
-    const handleSubmit = async (evt: SubmitEvent) => {
-        evt.preventDefault();
-        const task = await api.put<Task>("/task", eTask());
+    const handleSubmit = async () => {
+        // evt.preventDefault();
+        const task = await api.put<Task>("/task", element());
         console.log(task);
     };
 
-    const handleInput = (name: "title" | "description", value: string) => {
-        const task = { ...eTask() };
+    const handleInput = (value: string, name: "title" | "description") => {
+        const task = { ...element() };
         task[name] = value;
-        setEtask(task);
+        setElement(task);
     };
 
     const handleDelete = async () => {
-        await api.delete(`/tasks/${eTask().id}`);
+        await api.delete(`/tasks/${element().id}`);
         window.location.href = "/";
     };
-
     return (
-        <div class={styles.main}>
-            {eTask() && eTask().id ? (
-                <div class={styles.inputContainer}>
-                    <h2>Edit Task</h2>
-                    {/* <div>{eTask().description}</div> */}
-                    <form onSubmit={handleSubmit} class={styles.inputContainer}>
-                        <button>save</button>
-                        <br />
-                        <br />
-                        <input
-                            class={styles.editTaskInputTitle}
-                            type="text"
-                            value={eTask().title}
-                            placeholder={eTask().title}
-                            onInput={(evt) => {
-                                handleInput("title", evt.currentTarget.value);
-                            }}
-                        />
-
-                        <p>Status: {eTask().is_complete ? "complete" : "to do"}</p>
-                        <select onChange={(evt) => handleSelect(evt.currentTarget.value)}>
-                            <option value={0} selected={!eTask().is_complete}>
-                                to do
-                            </option>
-                            <option value={1} selected={eTask().is_complete}>
-                                complete
-                            </option>
-                        </select>
-
-                        <br />
-                        <br />
-                        <textarea
-                            class={styles.editTaskInputDescription}
-                            value={eTask().description}
-                            placeholder={eTask().description}
-                            onInput={(evt) => {
-                                handleInput("description", evt.currentTarget.value);
-                            }}
-                        />
-                        <br />
-                    </form>
-                    <div>
-                        {deletePrompt() ? (
-                            <div>
-                                <p>are you sure?</p>
-                                <button onClick={handleDelete}>yes, delete</button>
-                            </div>
-                        ) : (
-                            <button onClick={() => setDeletePrompt(!deletePrompt())}>delete</button>
-                        )}
-                    </div>
+        <>
+            <h2>Edit Task</h2>
+            <FormWrapper onSubmit={handleSubmit}>
+                <button>save</button>
+                <br />
+                <br />
+                <TextInput
+                    value={element().title}
+                    onInput={handleInput}
+                    name="title"
+                    type="input"
+                    onFocusLost={handleSubmit}
+                />
+                <br />
+                <br />
+                <TextInput
+                    value={element().description}
+                    onInput={handleInput}
+                    name="description"
+                    type="textarea"
+                    onFocusLost={handleSubmit}
+                />
+                <div>
+                    Status:{" "}
+                    <select onChange={(evt) => handleSelect(evt.currentTarget.value)}>
+                        <option
+                            value={0}
+                            selected={!element().is_complete}
+                        >
+                            to do
+                        </option>
+                        <option
+                            value={1}
+                            selected={element().is_complete}
+                        >
+                            complete
+                        </option>
+                    </select>
                 </div>
-            ) : (
-                <>An error occurred</>
-            )}
-        </div>
+
+                <div>
+                    {deletePrompt() ? (
+                        <div>
+                            <p>are you sure?</p>
+                            <button onClick={handleDelete}>yes, delete</button>
+                        </div>
+                    ) : (
+                        <button onClick={() => setDeletePrompt(!deletePrompt())}>delete</button>
+                    )}
+                </div>
+            </FormWrapper>
+        </>
+    );
+};
+
+const CategoryEditorCanvas: Component = () => {
+    return <div>category edit</div>;
+};
+
+const FormWrapper: ParentComponent<{ onSubmit: CallableFunction }> = (props) => {
+    const handleSubmit = (evt: any) => {
+        evt.preventDefault();
+        props.onSubmit(evt);
+    };
+
+    return <form onSubmit={handleSubmit}>{props.children}</form>;
+};
+
+const TextInput: Component<{
+    onInput: (value: string, name: "title" | "description") => void;
+    value: string;
+    name: "title" | "description";
+    type: "input" | "textarea";
+    onFocusLost: CallableFunction;
+}> = (props) => {
+    if (props.type === "input") {
+        return (
+            <input
+                class={styles.editTaskInputTitle}
+                type="text"
+                value={props.value}
+                placeholder={props.value}
+                name={props.name}
+                onFocusOut={() => props.onFocusLost()}
+                onInput={(evt) => {
+                    props.onInput(evt.currentTarget.value, props.name);
+                }}
+            />
+        );
+    }
+    return (
+        <textarea
+            class={styles.editTaskInputDescription}
+            value={props.value}
+            placeholder={props.value}
+            name={props.name}
+            onFocusOut={() => props.onFocusLost()}
+            onInput={(evt) => {
+                props.onInput(evt.currentTarget.value, props.name);
+            }}
+        />
     );
 };
 
@@ -456,7 +509,10 @@ const Home: Component = () => {
                         : { "justify-content": "space-evenly" }
                 }
             >
-                <For each={categories()} fallback={<div>No categories found</div>}>
+                <For
+                    each={categories()}
+                    fallback={<div>No categories found</div>}
+                >
                     {(item, index) => (
                         <Category
                             updateCategory={handleUpdateCategory}
@@ -485,9 +541,22 @@ const App: Component = () => {
                 <A href="/">Chaos Manager</A> | <A href="/calendar">Calendar</A>
             </div>
             <Routes>
-                <Route path="/" component={Home} />
-                <Route path="/calendar" component={Calendar} />
-                <Route path="/editor/*" component={TaskEditorCanvas} />
+                <Route
+                    path="/"
+                    component={Home}
+                />
+                <Route
+                    path="/calendar"
+                    component={Calendar}
+                />
+                <Route
+                    path="/editor/task/*"
+                    component={TaskEditorCanvas}
+                />
+                <Route
+                    path="/editor/category/*"
+                    component={CategoryEditorCanvas}
+                />
             </Routes>
         </div>
     );
