@@ -549,7 +549,9 @@ const Home: Component = () => {
                     )}
                 </For>
             </header>
-            <div>{/* <button>Add Category</button> */}</div>
+            <div>
+                <button>Add Category</button>
+            </div>
         </div>
     );
 };
