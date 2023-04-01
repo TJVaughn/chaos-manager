@@ -1,0 +1,9 @@
+POST http://localhost:8080/categories
+Content-Type: application/json
+
+{
+    "title": "new category!",
+    "description": "thisis it!",
+    "owner_id": 1,
+    "priority": 3
+}
