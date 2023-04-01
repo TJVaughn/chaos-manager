@@ -15,21 +15,9 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 
 render(
     () => (
-        <TaskContextProvider
-            task={{
-                title: "Sorry, an error occurred",
-                description: "",
-                category_id: 1,
-                id: 1,
-                owner_id: 1,
-                priority: 1,
-                is_complete: false,
-            }}
-        >
-            <Router>
-                <App />
-            </Router>
-        </TaskContextProvider>
+        <Router>
+            <App />
+        </Router>
     ),
     root!
 );

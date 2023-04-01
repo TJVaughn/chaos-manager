@@ -1,13 +1,4 @@
-import {
-    Component,
-    For,
-    onMount,
-    createSignal,
-    createContext,
-    useContext,
-    ParentComponent,
-} from "solid-js";
-import { createStore } from "solid-js/store";
+import { Component, For, onMount, createSignal } from "solid-js";
 import { Routes, Route, A } from "@solidjs/router";
 import styles from "./App.module.css";
 import axios from "axios";
@@ -118,11 +109,8 @@ const Task: Component<{
         props.setEndComponent({ item: props.item, index: props.index });
     };
 
-    const [task, { updateTask }] = useTask();
-
     const handleClick = () => {
         console.log(props.item);
-        updateTask(props.item);
         window.location.href = `/editor/${props.item.id}`;
     };
     return (
@@ -149,7 +137,6 @@ const Task: Component<{
 
 const Category: Component<{
     category: Category;
-    redirectToEditor: CallableFunction;
     updateCategory: (category: Category, index: number) => void;
     categoryDataRefresh: CallableFunction;
     categoryIndex: number;
@@ -301,25 +288,8 @@ const Category: Component<{
     );
 };
 
-type TaskContextState = {
-    readonly title: string;
-    readonly is_complete: boolean;
-    readonly description: string;
-    readonly category_id: number;
-    readonly id: number;
-    readonly owner_id: number;
-    readonly priority: number;
-};
-
-type TaskContextValue = [
-    state: TaskContextState,
-    actions: {
-        updateTask: (task: Task) => void;
-    }
-];
-
 const defaultTaskState: Task = {
-    title: "Sorry, an error occurred",
+    title: "loading...",
     description: "",
     category_id: 1,
     id: 1,
@@ -328,54 +298,15 @@ const defaultTaskState: Task = {
     is_complete: false,
 };
 
-const TaskContext = createContext<TaskContextValue>([
-    defaultTaskState,
-    {
-        updateTask: () => undefined,
-    },
-]);
-
-const useTask = () => useContext(TaskContext);
-
-export const TaskContextProvider: ParentComponent<{ task: Task }> = (props) => {
-    const { task } = props;
-    const [state, setState] = createStore<Task>({
-        title: task.title ?? defaultTaskState.title,
-        is_complete: task.is_complete ?? defaultTaskState.is_complete,
-        category_id: task.category_id ?? 1,
-        description: task.description ?? "",
-        id: task.id ?? 1,
-        owner_id: task.owner_id ?? 1,
-        priority: task.priority ?? 1,
-    });
-
-    const updateTask = (task: Task) => {
-        setState(task);
-    };
-
-    return (
-        <TaskContext.Provider value={[state, { updateTask }]}>
-            {props.children}
-        </TaskContext.Provider>
-    );
-};
-
 const TaskEditorCanvas: Component = () => {
-    const [task, { updateTask }] = useTask();
     const api = apiUtil();
 
     const [deletePrompt, setDeletePrompt] = createSignal<boolean>(false);
     const [eTask, setEtask] = createSignal<Task>(defaultTaskState);
 
-    // let eTask: Task;
-
     onMount(async () => {
         const id = window.location.pathname.split("/editor/")[1];
-        if (task.title === "Sorry, an error occurred") {
-            setEtask(await api.get(`/tasks/${id}`));
-        } else {
-            setEtask({ ...task });
-        }
+        setEtask(await api.get(`/tasks/${id}`));
     });
 
     const handleSelect = async (value: string) => {
@@ -468,11 +399,6 @@ const TaskEditorCanvas: Component = () => {
 };
 
 const Home: Component = () => {
-    const [route, setRoute] = createSignal<"categories" | "calendar" | "task-editor">("categories");
-    const [editTask, setEditTask] = createSignal<Task>();
-    const [path, setPath] = createSignal("/");
-    const [tasks, setTasks] = createSignal({});
-
     const api = apiUtil();
 
     const [categories, setCategories] = createSignal<Category[]>([
@@ -486,11 +412,6 @@ const Home: Component = () => {
             tasks_todo: [],
         },
     ]);
-
-    const switchRouteToTaskEditor = (taskData: Task) => {
-        setEditTask(taskData);
-        setRoute("task-editor");
-    };
 
     const getUpdatedCategories = async () => {
         const categories = await api.get<Category[]>("/categories");
@@ -512,8 +433,6 @@ const Home: Component = () => {
     };
 
     const handleUpdateCategory = async (category: Category, index: number) => {
-        // api.post to update task
-        // console.log(categories());
         if (category.tasks_todo.length > 0) {
             await api.put<Task[]>("/tasks", category.tasks_todo);
         }
@@ -543,7 +462,6 @@ const Home: Component = () => {
                             updateCategory={handleUpdateCategory}
                             categoryDataRefresh={handleCategoryDataRefresh}
                             category={item}
-                            redirectToEditor={switchRouteToTaskEditor}
                             categoryIndex={index()}
                         />
                     )}
@@ -569,7 +487,7 @@ const App: Component = () => {
             <Routes>
                 <Route path="/" component={Home} />
                 <Route path="/calendar" component={Calendar} />
-                <Route path="/editor/*" element={<TaskEditorCanvas />} />
+                <Route path="/editor/*" component={TaskEditorCanvas} />
             </Routes>
         </div>
     );
