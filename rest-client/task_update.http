@@ -1,0 +1,12 @@
+PUT http://localhost:8080/task
+Content-Type: application/json
+
+{
+    "id": 2,
+    "title":"do work son, do it real good",
+    "description": "",
+    "is_complete": false,
+    "priority": 2,
+    "owner_id": 1,
+    "category_id": 2
+}

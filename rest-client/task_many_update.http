@@ -1,0 +1,24 @@
+PUT http://localhost:8080/tasks
+Content-Type: application/json
+
+
+    [
+        {
+            "id":4,
+            "title":"do it hard too",
+            "description":"",
+            "is_complete":false,
+            "priority":1,
+            "owner_id":1,
+            "category_id":1
+        },
+        {
+            "id":5,
+            "title":"ohhh yeah",
+            "description":"",
+            "is_complete":false,
+            "priority":0,
+            "owner_id":1,
+            "category_id":1
+        }
+    ]

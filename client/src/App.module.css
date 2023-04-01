@@ -1,0 +1,129 @@
+.App {
+    text-align: center;
+    background-color: #282c34;
+    min-height: 100vh;
+    font-size: calc(10px + 2vmin);
+    color: white;
+}
+
+.logo {
+    animation: logo-spin infinite 36s linear;
+    height: 40vmin;
+    pointer-events: none;
+}
+
+.main {
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+
+    /* overflow: scroll; */
+}
+
+.link {
+    color: #b318f0;
+}
+
+@keyframes logo-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.category {
+    color: #ccc;
+    height: 80vh;
+    width: 300px;
+    min-width: 300px;
+    border: 1px solid #fff;
+    margin: 10px;
+}
+
+.categoryHeader {
+    width: 100%;
+    border-bottom: 2px solid #444;
+}
+
+.categoryTask {
+    font-size: 1.1rem;
+    text-align: left;
+    padding: 5px;
+    border: 1px solid #444;
+    cursor: pointer;
+}
+
+.categoryTaskButton,
+.categoryTaskButtonComplete {
+    border-radius: 50%;
+    height: 1.1rem;
+    width: 1.1rem;
+    border: none;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.categoryTaskButtonComplete {
+    background-color: green;
+}
+
+.taskTitleComplete {
+    color: green;
+}
+.taskContainer {
+    padding: 5px 3px;
+    margin: 5px 0;
+    border: 1px solid #444;
+}
+.taskContainer:hover {
+    background-color: #333;
+}
+
+.Navbar {
+    font-size: 1.2em;
+    background-color: #16171b;
+    color: #fff;
+    height: 4vh;
+}
+a {
+    cursor: pointer;
+    color: #fff;
+    text-decoration: none;
+}
+
+.editTaskInputTitle {
+    width: 50%;
+    height: 5vh;
+    font-size: x-large;
+    font-weight: 700;
+    padding: 1%;
+    text-align: center;
+    background-color: #333;
+    color: #ccc;
+}
+
+.editTaskInputDescription {
+    max-width: 50%;
+    width: 50%;
+    height: 20vh;
+    font-size: 1.1rem;
+    padding: 1%;
+    text-align: left;
+    overflow-y: scroll;
+    background-color: #333;
+    color: #ccc;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+        "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.inputContainer {
+    display: block;
+}

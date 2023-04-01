@@ -1,0 +1,11 @@
+POST http://localhost:8080/tasks
+Content-Type: application/json
+
+{
+    "title":"do work son",
+    "description": "",
+    "is_complete": false,
+    "priority": 2,
+    "owner_id": 1,
+    "category_id": 2
+}
