@@ -5,7 +5,6 @@ use actix_web::{
     web::{self},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use postgres::Statement;
 use serde::{Deserialize, Serialize};
 use tokio;
 use tokio_postgres::{Client, NoTls};
@@ -14,37 +13,6 @@ use tokio_postgres::{Client, NoTls};
 struct MyObj {
     name: String,
 }
-
-// #[derive(Fail, Debug)]
-// pub enum Error {
-//     // 401
-//     #[fail(display = "Unauthorized: {}", _0)]
-//     Unauthorized(JsonValue),
-
-//     // 403
-//     #[fail(display = "Forbidden: {}", _0)]
-//     Forbidden(JsonValue),
-
-//     // 404
-//     #[fail(display = "Not Found: {}", _0)]
-//     NotFound(JsonValue),
-
-//     // 422
-//     #[fail(display = "Unprocessable Entity: {}", _0)]
-//     UnprocessableEntity(JsonValue),
-
-//     // 500
-//     #[fail(display = "Internal Server Error")]
-//     InternalServerError,
-// }
-
-// #[get("/a/{name}")]
-// async fn index(name: web::Path<String>) -> Result<impl Responder, dyn Error> {
-//     let obj = MyObj {
-//         name: name.to_string(),
-//     };
-//     Ok(web::Json(obj))
-// }
 
 #[get("/user")]
 async fn hello() -> impl Responder {
@@ -309,11 +277,6 @@ async fn update_task(_req: HttpRequest, params: web::Json<Task>) -> impl Respond
         }
     }
 }
-
-// #[derive(Serialize, Deserialize)]
-// struct PutTaskReq {
-//     tasks: Vec<Task>,
-// }
 
 #[put("/tasks")]
 async fn update_many_tasks(_req: HttpRequest, params: web::Json<Vec<Task>>) -> impl Responder {
