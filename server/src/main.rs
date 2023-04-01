@@ -67,6 +67,14 @@ struct TaskRequest {
     category_id: i32,
 }
 
+#[derive(Serialize, Deserialize)]
+struct CategoryRequest {
+    title: String,
+    description: String,
+    priority: i32,
+    owner_id: i32,
+}
+
 async fn connect_to_db() -> Client {
     let url = "postgresql://chaos:changeit@localhost:5432/chaos";
     let (client, connection) = tokio_postgres::connect(url, NoTls)
@@ -403,6 +411,42 @@ async fn get_categories() -> impl Responder {
     return HttpResponse::Ok().json(categories);
 }
 
+#[post("/categories")]
+async fn create_category(_req: HttpRequest, params: web::Json<CategoryRequest>) -> impl Responder {
+    let client = connect_to_db().await;
+
+    let cat = CategoryRequest {
+        title: params.title.to_owned(),
+        description: params.description.to_owned(),
+        priority: params.priority,
+        owner_id: params.owner_id,
+    };
+
+    match client
+        .execute(
+            "INSERT INTO public.category (
+                title, 
+                description, 
+                priority, 
+                owner_id
+            ) VALUES ($1, $2, $3, $4)",
+            &[&cat.title, &cat.description, &cat.priority, &cat.owner_id],
+        )
+        .await
+    {
+        Ok(_data) => {
+            return HttpResponse::Created()
+                .content_type("application/json")
+                .json(cat);
+        }
+        Err(err) => {
+            return HttpResponse::ServiceUnavailable()
+                .content_type("application/json")
+                .json(err.to_string());
+        }
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
@@ -422,6 +466,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_task_by_id)
             .service(delete_task_by_id)
             .service(get_categories)
+            .service(create_category)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
