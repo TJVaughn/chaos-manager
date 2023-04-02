@@ -136,3 +136,39 @@ a {
     margin: 0;
     padding: 0;
 }
+
+.calendarContainer {
+    display: grid;
+    grid-template-columns: repeat(7, 14%);
+    border: 1px solid #444;
+    text-align: center;
+    /* flex-direction: row; */
+    justify-content: space-evenly;
+}
+
+.calendarContainer .calheader {
+    border: 1px solid #222;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.calendarHoursContainer {
+    display: grid;
+    flex-direction: column;
+    text-align: left;
+    justify-content: space-evenly;
+    font-size: 18px;
+}
+
+.hourBlock {
+    width: 14vw;
+    height: 100px;
+    background-color: #242;
+    border: 1px solid #000;
+}
+
+.hourBlockContent {
+    padding: 3px;
+    height: 43%;
+    border: 1px solid #000;
+}

@@ -99,7 +99,6 @@ const AddTaskInput: Component<{ handleInputSubmit: CallableFunction }> = (props)
                 class={styles.addTaskInput}
                 placeholder="add next todo"
             />
-            {/* <button>Add</button> */}
         </form>
     );
 };
@@ -547,11 +546,11 @@ const Home: Component = () => {
 
     const handleUpdateCategory = async (category: Category, index: number) => {
         if (category.tasks_todo.length > 0) {
-            await api.put<Task[]>("/task", category.tasks_todo);
+            await api.put<Task[]>("/tasks", category.tasks_todo);
         }
 
         if (category.tasks_done.length > 0) {
-            await api.put<Task[]>("/task", category.tasks_done);
+            await api.put<Task[]>("/tasks", category.tasks_done);
         }
 
         if (typeof categories() !== "undefined" && categories()!.length > 0) {
@@ -600,19 +599,64 @@ const Home: Component = () => {
                 </For>
             </header>
             <div>
-                <A
-                    href="/"
-                    onClick={handleAddCategory}
-                >
-                    <button>Add Category</button>
-                </A>
+                {categories() && categories()!.length >= 3 ? (
+                    ""
+                ) : (
+                    <A
+                        href="/"
+                        onClick={handleAddCategory}
+                    >
+                        <button>Add Category</button>
+                    </A>
+                )}
             </div>
         </div>
     );
 };
 
 const Calendar: Component = () => {
-    return <div>Calendar</div>;
+    const [hours, setHours] = createSignal<number[]>([0]);
+    const [days, setDays] = createSignal([
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]);
+
+    onMount(() => {
+        let hoursArr: number[] = [];
+        for (let i = 0; i < 24; i++) {
+            hoursArr.push(i + 0);
+        }
+        setHours(hoursArr);
+    });
+
+    return (
+        <div>
+            <div class={styles.calendarContainer}>
+                {days().map((day) => (
+                    <div class={styles.calheader}>{day}</div>
+                ))}
+            </div>
+            <div class={styles.calendarContainer}>
+                {days().map((day) => (
+                    <div class={styles.calheader}>
+                        <div class={styles.calendarHoursContainer}>
+                            {hours()!.map((hour) => (
+                                <div class={styles.hourBlock}>
+                                    <div class={styles.hourBlockContent}>{hour}:00</div>
+                                    <div class={styles.hourBlockContent}>{hour}:30</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 };
 
 const App: Component = () => {
