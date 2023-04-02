@@ -167,7 +167,7 @@ struct InfoPathId {
     id: i32,
 }
 
-#[get("/tasks/{id}")]
+#[get("/task/{id}")]
 async fn get_task_by_id(info: Path<InfoPathId>) -> impl Responder {
     let id = info.id;
     let client = connect_to_db().await;
@@ -190,7 +190,7 @@ async fn get_task_by_id(info: Path<InfoPathId>) -> impl Responder {
     return HttpResponse::Ok().json(task);
 }
 
-#[post("/tasks")]
+#[post("/task")]
 async fn create_task(_req: HttpRequest, params: web::Json<TaskRequest>) -> impl Responder {
     let client = connect_to_db().await;
 
@@ -338,7 +338,7 @@ async fn update_many_tasks(_req: HttpRequest, params: web::Json<Vec<Task>>) -> i
         .json("{success: 200}");
 }
 
-#[delete("/tasks/{id}")]
+#[delete("/task/{id}")]
 async fn delete_task_by_id(info: Path<InfoPathId>) -> impl Responder {
     let id = info.id;
     let client = connect_to_db().await;
@@ -411,7 +411,7 @@ async fn get_categories() -> impl Responder {
     return HttpResponse::Ok().json(categories);
 }
 
-#[post("/categories")]
+#[post("/category")]
 async fn create_category(_req: HttpRequest, params: web::Json<CategoryRequest>) -> impl Responder {
     let client = connect_to_db().await;
 
@@ -423,21 +423,22 @@ async fn create_category(_req: HttpRequest, params: web::Json<CategoryRequest>) 
     };
 
     match client
-        .execute(
+        .query_one(
             "INSERT INTO public.category (
                 title, 
                 description, 
                 priority, 
                 owner_id
-            ) VALUES ($1, $2, $3, $4)",
+            ) VALUES ($1, $2, $3, $4) RETURNING id",
             &[&cat.title, &cat.description, &cat.priority, &cat.owner_id],
         )
         .await
     {
-        Ok(_data) => {
+        Ok(data) => {
+            let id: i32 = data.get(0);
             return HttpResponse::Created()
                 .content_type("application/json")
-                .json(cat);
+                .json(id);
         }
         Err(err) => {
             return HttpResponse::ServiceUnavailable()
@@ -445,6 +446,92 @@ async fn create_category(_req: HttpRequest, params: web::Json<CategoryRequest>) 
                 .json(err.to_string());
         }
     }
+}
+
+#[get("/category/{id}")]
+async fn get_category_by_id(info: Path<InfoPathId>) -> impl Responder {
+    let id = info.id;
+    let client = connect_to_db().await;
+
+    let row = client
+        .query_one("SELECT * FROM public.category WHERE id=$1", &[&id])
+        .await
+        .expect("error getting category");
+
+    let cat = Category {
+        id: row.get(0),
+        title: row.get(1),
+        description: row.try_get(2).expect("value was null"),
+        priority: row.get(3),
+        owner_id: row.get(4),
+        tasks_done: Vec::new(),
+        tasks_todo: Vec::new(),
+    };
+
+    return HttpResponse::Ok().json(cat);
+}
+
+#[put("/category/{id}")]
+async fn update_category(
+    _req: HttpRequest,
+    params: web::Json<CategoryRequest>,
+    info: Path<InfoPathId>,
+) -> impl Responder {
+    let client = connect_to_db().await;
+    let cat_id = info.id;
+
+    let category = Category {
+        id: cat_id,
+        title: params.title.to_owned(),
+        description: Some(params.description.to_owned()),
+        priority: params.priority,
+        owner_id: params.owner_id,
+        tasks_done: Vec::new(),
+        tasks_todo: Vec::new(),
+    };
+
+    match client
+        .execute(
+            "UPDATE public.category
+            SET title = $1, 
+                description = $2,
+                priority = $3, 
+                owner_id = $4
+             WHERE id = $5",
+            &[
+                &category.title,
+                &category.description,
+                &category.priority,
+                &category.owner_id,
+                &category.id,
+            ],
+        )
+        .await
+    {
+        Ok(_data) => {
+            return HttpResponse::Created()
+                .content_type("application/json")
+                .json(category);
+        }
+        Err(err) => {
+            return HttpResponse::ServiceUnavailable()
+                .content_type("application/json")
+                .json(err.to_string());
+        }
+    }
+}
+
+#[delete("/category/{id}")]
+async fn delete_category_by_id(info: Path<InfoPathId>) -> impl Responder {
+    let id = info.id;
+    let client = connect_to_db().await;
+
+    client
+        .execute("DELETE FROM public.category WHERE id=$1", &[&id])
+        .await
+        .expect("error deleting category");
+
+    return HttpResponse::Ok().json("Deleted Item");
 }
 
 #[actix_web::main]
@@ -466,7 +553,10 @@ async fn main() -> std::io::Result<()> {
             .service(get_task_by_id)
             .service(delete_task_by_id)
             .service(get_categories)
+            .service(get_category_by_id)
             .service(create_category)
+            .service(update_category)
+            .service(delete_category_by_id)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
