@@ -25,6 +25,7 @@ type Category = {
     tasks_todo: Task[];
     tasks_done: Task[];
 };
+
 function apiUtil() {
     const api = {
         get: async function get<T>(endpoint: string): Promise<T> {
@@ -32,7 +33,7 @@ function apiUtil() {
             const data = await req.json();
             return data;
         },
-        post: async function post<T>(endpoint: string, data: T): Promise<T> {
+        post: async function post<T, RT>(endpoint: string, data: T): Promise<RT> {
             const req = await axios({
                 url: `http://localhost:8080${endpoint}`,
                 method: "POST",
@@ -68,6 +69,16 @@ function apiUtil() {
 
     return api;
 }
+
+const defaultTaskState: Task = {
+    title: "loading...",
+    description: "",
+    category_id: 1,
+    id: 1,
+    owner_id: 1,
+    priority: 1,
+    is_complete: false,
+};
 
 const AddTaskInput: Component<{ handleInputSubmit: CallableFunction }> = (props) => {
     const [value, setValue] = createSignal("");
@@ -235,7 +246,7 @@ const Category: Component<{
     };
 
     const handleInputSubmit = async (target: string) => {
-        let task = await api.post<TaskData>("/tasks", {
+        let task = await api.post<TaskData, TaskData>("/task", {
             title: target,
             description: "",
             is_complete: false,
@@ -249,9 +260,19 @@ const Category: Component<{
         }
     };
 
+    const handleCategoryClick = () => {
+        window.location.href = `/editor/category/${props.category.id}`;
+    };
     return (
         <div class={styles.category}>
-            <div class={styles.categoryHeader}>{props.category.title}</div>
+            <div class={styles.categoryHeader}>
+                <A
+                    onClick={handleCategoryClick}
+                    href={`/category/${props.category.id}`}
+                >
+                    {props.category.title}
+                </A>
+            </div>
             <div class={styles.categoryTask}>
                 <For
                     each={props.category.tasks_todo}
@@ -294,26 +315,21 @@ const Category: Component<{
     );
 };
 
-const defaultTaskState: Task = {
-    title: "loading...",
-    description: "",
-    category_id: 1,
-    id: 1,
-    owner_id: 1,
-    priority: 1,
-    is_complete: false,
-};
-
-const TaskEditorCanvas: Component = () => {
+const TaskEditorCanvas: Component<{ type: "task" | "category" }> = (props) => {
     const api = apiUtil();
 
     const [deletePrompt, setDeletePrompt] = createSignal<boolean>(false);
     const [element, setElement] = createSignal<Task>(defaultTaskState);
 
     onMount(async () => {
-        const id = window.location.pathname.split("/editor/task/")[1];
-        console.log(id);
-        setElement(await api.get(`/tasks/${id}`));
+        if (props.type === "task") {
+            const id = window.location.pathname.split("/editor/task/")[1];
+            setElement(await api.get(`/task/${id}`));
+            return;
+        }
+        const id = window.location.pathname.split("/editor/category/")[1];
+        setElement(await api.get(`/category/${id}`));
+        return;
     });
 
     const handleSelect = async (value: string) => {
@@ -332,8 +348,14 @@ const TaskEditorCanvas: Component = () => {
 
     const handleSubmit = async () => {
         // evt.preventDefault();
-        const task = await api.put<Task>("/task", element());
-        console.log(task);
+        if (props.type === "task") {
+            const task = await api.put<Task>("/task", element());
+            console.log(task);
+            return;
+        }
+        const cat = await api.put(`/category/${element().id}`, element());
+        console.log(cat);
+        return;
     };
 
     const handleInput = (value: string, name: "title" | "description") => {
@@ -343,12 +365,21 @@ const TaskEditorCanvas: Component = () => {
     };
 
     const handleDelete = async () => {
-        await api.delete(`/tasks/${element().id}`);
+        if (props.type === "task") {
+            await api.delete(`/task/${element().id}`);
+        } else {
+            await api.delete(`/category/${element().id}`);
+        }
         window.location.href = "/";
     };
+
+    const handleCategoryPrioritySelect = (priorities: number[]) => {
+        console.log(priorities);
+    };
+
     return (
         <>
-            <h2>Edit Task</h2>
+            <h2>Edit {props.type}</h2>
             <FormWrapper onSubmit={handleSubmit}>
                 <button>save</button>
                 <br />
@@ -369,24 +400,18 @@ const TaskEditorCanvas: Component = () => {
                     type="textarea"
                     onFocusLost={handleSubmit}
                 />
-                <div>
-                    Status:{" "}
-                    <select onChange={(evt) => handleSelect(evt.currentTarget.value)}>
-                        <option
-                            value={0}
-                            selected={!element().is_complete}
-                        >
-                            to do
-                        </option>
-                        <option
-                            value={1}
-                            selected={element().is_complete}
-                        >
-                            complete
-                        </option>
-                    </select>
-                </div>
-
+                {typeof element().is_complete === "undefined" ? (
+                    <SelectPriority
+                        onSelect={handleCategoryPrioritySelect}
+                        priorities={[1, 2, 3]}
+                        priority={element().priority}
+                    />
+                ) : (
+                    <SelectInput
+                        is_complete={element().is_complete}
+                        onSelect={handleSelect}
+                    />
+                )}
                 <div>
                     {deletePrompt() ? (
                         <div>
@@ -402,8 +427,48 @@ const TaskEditorCanvas: Component = () => {
     );
 };
 
-const CategoryEditorCanvas: Component = () => {
-    return <div>category edit</div>;
+const SelectPriority: Component<{
+    onSelect: CallableFunction;
+    priorities: number[];
+    priority: number;
+}> = (props) => {
+    return (
+        <div>
+            Priority:{" "}
+            <select onChange={(evt) => props.onSelect(evt.currentTarget.value)}>
+                {props.priorities.map((item) => (
+                    <option
+                        selected={props.priority === item}
+                        value={item}
+                    >
+                        {item}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+};
+
+const SelectInput: Component<{ onSelect: CallableFunction; is_complete: boolean }> = (props) => {
+    return (
+        <div>
+            Status:{" "}
+            <select onChange={(evt) => props.onSelect(evt.currentTarget.value)}>
+                <option
+                    value={0}
+                    selected={!props.is_complete}
+                >
+                    to do
+                </option>
+                <option
+                    value={1}
+                    selected={props.is_complete}
+                >
+                    complete
+                </option>
+            </select>
+        </div>
+    );
 };
 
 const FormWrapper: ParentComponent<{ onSubmit: CallableFunction }> = (props) => {
@@ -487,16 +552,29 @@ const Home: Component = () => {
 
     const handleUpdateCategory = async (category: Category, index: number) => {
         if (category.tasks_todo.length > 0) {
-            await api.put<Task[]>("/tasks", category.tasks_todo);
+            await api.put<Task[]>("/task", category.tasks_todo);
         }
 
         if (category.tasks_done.length > 0) {
-            await api.put<Task[]>("/tasks", category.tasks_done);
+            await api.put<Task[]>("/task", category.tasks_done);
         }
         const newCategories = [...categories()];
         newCategories[index] = category;
         console.log(newCategories);
         setCategories([...newCategories]);
+    };
+
+    const handleAddCategory = async () => {
+        const id = await api.post<Omit<Category, "id">, number>("/category", {
+            title: "title",
+            description: "description",
+            priority: categories().length,
+            tasks_done: [],
+            tasks_todo: [],
+            owner_id: categories()[0].owner_id,
+        });
+
+        window.location.href = `/editor/category/${id}`;
     };
 
     return (
@@ -524,7 +602,12 @@ const Home: Component = () => {
                 </For>
             </header>
             <div>
-                <button>Add Category</button>
+                <A
+                    href="/"
+                    onClick={handleAddCategory}
+                >
+                    <button>Add Category</button>
+                </A>
             </div>
         </div>
     );
@@ -551,11 +634,11 @@ const App: Component = () => {
                 />
                 <Route
                     path="/editor/task/*"
-                    component={TaskEditorCanvas}
+                    element={<TaskEditorCanvas type="task" />}
                 />
                 <Route
                     path="/editor/category/*"
-                    component={CategoryEditorCanvas}
+                    element={<TaskEditorCanvas type="category" />}
                 />
             </Routes>
         </div>
