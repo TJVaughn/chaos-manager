@@ -88,13 +88,18 @@ const AddTaskInput: Component<{ handleInputSubmit: CallableFunction }> = (props)
         setValue("");
     };
     return (
-        <form onSubmit={handleSubmit}>
+        <form
+            onSubmit={handleSubmit}
+            class={styles.addTaskContainer}
+        >
             <input
                 type="text"
                 value={value()}
                 onChange={(evt) => setValue(evt.currentTarget.value)}
+                class={styles.addTaskInput}
+                placeholder="add next todo"
             />
-            <button>Add</button>
+            {/* <button>Add</button> */}
         </form>
     );
 };
@@ -519,17 +524,7 @@ const TextInput: Component<{
 const Home: Component = () => {
     const api = apiUtil();
 
-    const [categories, setCategories] = createSignal<Category[]>([
-        {
-            title: "loading",
-            id: 0,
-            description: "",
-            owner_id: 1,
-            priority: 1,
-            tasks_done: [],
-            tasks_todo: [],
-        },
-    ]);
+    const [categories, setCategories] = createSignal<Category[]>();
 
     const getUpdatedCategories = async () => {
         const categories = await api.get<Category[]>("/categories");
@@ -558,20 +553,23 @@ const Home: Component = () => {
         if (category.tasks_done.length > 0) {
             await api.put<Task[]>("/task", category.tasks_done);
         }
-        const newCategories = [...categories()];
-        newCategories[index] = category;
-        console.log(newCategories);
-        setCategories([...newCategories]);
+
+        if (typeof categories() !== "undefined" && categories()!.length > 0) {
+            const newCategories = [...categories()!];
+            newCategories[index] = category;
+            console.log(newCategories);
+            setCategories([...newCategories]);
+        }
     };
 
     const handleAddCategory = async () => {
         const id = await api.post<Omit<Category, "id">, number>("/category", {
             title: "title",
             description: "description",
-            priority: categories().length,
+            priority: categories()!.length,
             tasks_done: [],
             tasks_todo: [],
-            owner_id: categories()[0].owner_id,
+            owner_id: 1,
         });
 
         window.location.href = `/editor/category/${id}`;
