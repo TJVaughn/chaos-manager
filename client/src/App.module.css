@@ -12,9 +12,6 @@
     pointer-events: none;
 }
 
-.main {
-}
-
 .header {
     display: flex;
     flex-direction: row;
