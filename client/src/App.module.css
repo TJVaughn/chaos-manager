@@ -4,7 +4,10 @@
     min-height: 100vh;
     font-size: calc(10px + 2vmin);
     color: white;
+    scroll-behavior: smooth;
 }
+
+/* 1200px is min width for calendar page */
 
 .logo {
     animation: logo-spin infinite 36s linear;
@@ -17,8 +20,6 @@
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-
-    /* overflow: scroll; */
 }
 
 .link {
@@ -87,7 +88,13 @@
     background-color: #16171b;
     color: #fff;
     height: 4vh;
+    position: fixed;
+    width: 100%;
 }
+.spacer {
+    height: 4vh;
+}
+
 a {
     cursor: pointer;
     color: #fff;
@@ -150,6 +157,7 @@ a {
     border: 1px solid #222;
     border-radius: 5px;
     padding: 5px;
+    font-size: 0.9em;
 }
 
 .calendarHoursContainer {
@@ -163,12 +171,67 @@ a {
 .hourBlock {
     width: 14vw;
     height: 100px;
-    background-color: #242;
+    background-color: #222;
     border: 1px solid #000;
+}
+.hourBlockCurrDay {
+    background-color: #242;
+}
+.hourBlockCurrHour {
+    background-color: #246;
 }
 
 .hourBlockContent {
     padding: 3px;
     height: 43%;
     border: 1px solid #000;
+}
+
+.addCalEventButton {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+    /* background-color: rgb(70, 218, 255); */
+    border: none;
+    cursor: pointer;
+    animation: wiggle 2000ms ease 5000ms 3 both;
+}
+
+.addCalEventButton:hover {
+    opacity: 0.8;
+}
+
+@keyframes wiggle {
+    0% {
+        bottom: 10px;
+        right: 10px;
+    }
+    10% {
+        bottom: 10px;
+        right: 20px;
+        transform: rotate(-30deg);
+    }
+    20% {
+        bottom: 10px;
+        right: 0px;
+        transform: rotate(30deg);
+    }
+    30% {
+        bottom: 10px;
+        right: 13px;
+        transform: rotate(-15deg);
+    }
+    40% {
+        bottom: 10px;
+        right: 7px;
+        transform: rotate(15deg);
+    }
+    50% {
+        bottom: 10px;
+        right: 10px;
+        transform: rotate(0deg);
+    }
 }
