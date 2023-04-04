@@ -280,14 +280,7 @@ const Category: Component<{
         window.location.href = `/editor/category/${props.category.id}`;
     };
     return (
-        <div
-            class={styles.category}
-            style={
-                category.tasks_done.length + category.tasks_todo.length > 17
-                    ? { "overflow-y": "scroll" }
-                    : {}
-            }
-        >
+        <div class={styles.category}>
             <div class={styles.categoryHeader}>
                 <A
                     onClick={handleCategoryClick}
@@ -296,7 +289,16 @@ const Category: Component<{
                     {props.category.title}
                 </A>
             </div>
-            <div class={styles.categoryTask}>
+            <div
+                style={{
+                    "overflow-y": "scroll",
+                    width: "100%",
+                    height: "100%",
+                    "padding-right": "17px",
+                    "box-sizing": "content-box",
+                }}
+                class={styles.categoryTask}
+            >
                 <AddTaskInput
                     handleInputSubmit={handleInputSubmit}
                     shouldFocus={categoryIndex === focusIdx ? true : false}
@@ -318,7 +320,6 @@ const Category: Component<{
                         />
                     )}
                 </For>
-
                 <hr />
                 <For
                     each={props.category.tasks_done}
@@ -337,6 +338,9 @@ const Category: Component<{
                         />
                     )}
                 </For>
+                <br />
+                <br />
+                <br />
             </div>
         </div>
     );
