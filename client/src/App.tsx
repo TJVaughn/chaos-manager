@@ -80,19 +80,30 @@ const defaultTaskState: Task = {
     is_complete: false,
 };
 
-const AddTaskInput: Component<{ handleInputSubmit: CallableFunction }> = (props) => {
+const AddTaskInput: Component<{ handleInputSubmit: CallableFunction; shouldFocus: boolean }> = (
+    props,
+) => {
     const [value, setValue] = createSignal("");
+    let currentInputRef: HTMLInputElement;
+
     const handleSubmit = (evt: SubmitEvent) => {
         evt.preventDefault();
-        props.handleInputSubmit(value());
+        props.handleInputSubmit(value(), currentInputRef);
         setValue("");
     };
+
+    onMount(() => {
+        if (props.shouldFocus) {
+            currentInputRef.focus();
+        }
+    });
     return (
         <form
             onSubmit={handleSubmit}
             class={styles.addTaskContainer}
         >
             <input
+                ref={currentInputRef!}
                 type="text"
                 value={value()}
                 onChange={(evt) => setValue(evt.currentTarget.value)}
@@ -155,8 +166,9 @@ const Category: Component<{
     updateCategory: (category: Category, index: number) => void;
     categoryDataRefresh: CallableFunction;
     categoryIndex: number;
+    focusIdx: number;
 }> = (props) => {
-    const { category, updateCategory, categoryIndex, categoryDataRefresh } = props;
+    const { category, updateCategory, categoryIndex, categoryDataRefresh, focusIdx } = props;
 
     const [startComponent, setStartComponent] = createSignal({
         item: "",
@@ -254,13 +266,13 @@ const Category: Component<{
             title: target,
             description: "",
             is_complete: false,
-            priority: 1,
+            priority: category.tasks_todo.length,
             category_id: category.id,
             owner_id: category.owner_id,
         });
 
         if (task.title === target) {
-            categoryDataRefresh();
+            categoryDataRefresh(categoryIndex);
         }
     };
 
@@ -268,7 +280,14 @@ const Category: Component<{
         window.location.href = `/editor/category/${props.category.id}`;
     };
     return (
-        <div class={styles.category}>
+        <div
+            class={styles.category}
+            style={
+                category.tasks_done.length + category.tasks_todo.length > 17
+                    ? { "overflow-y": "scroll" }
+                    : {}
+            }
+        >
             <div class={styles.categoryHeader}>
                 <A
                     onClick={handleCategoryClick}
@@ -278,6 +297,10 @@ const Category: Component<{
                 </A>
             </div>
             <div class={styles.categoryTask}>
+                <AddTaskInput
+                    handleInputSubmit={handleInputSubmit}
+                    shouldFocus={categoryIndex === focusIdx ? true : false}
+                />
                 <For
                     each={props.category.tasks_todo}
                     fallback={<div>No items, add a task</div>}
@@ -295,7 +318,7 @@ const Category: Component<{
                         />
                     )}
                 </For>
-                <AddTaskInput handleInputSubmit={handleInputSubmit} />
+
                 <hr />
                 <For
                     each={props.category.tasks_done}
@@ -524,6 +547,7 @@ const Home: Component = () => {
     const api = apiUtil();
 
     const [categories, setCategories] = createSignal<Category[]>();
+    const [focusIdx, setFocusIdx] = createSignal(0);
 
     const getUpdatedCategories = async () => {
         const categories = await api.get<Category[]>("/categories");
@@ -540,7 +564,8 @@ const Home: Component = () => {
         setCategories(await getUpdatedCategories());
     });
 
-    const handleCategoryDataRefresh = async () => {
+    const handleCategoryDataRefresh = async (focusIndex: number) => {
+        setFocusIdx(focusIndex);
         setCategories(await getUpdatedCategories());
     };
 
@@ -594,6 +619,7 @@ const Home: Component = () => {
                             categoryDataRefresh={handleCategoryDataRefresh}
                             category={item}
                             categoryIndex={index()}
+                            focusIdx={focusIdx()}
                         />
                     )}
                 </For>
@@ -713,9 +739,9 @@ const Calendar: Component = () => {
 };
 
 const ScheduleEditor: Component = () => {
-    const [startHour, setStartHour] = createSignal<string>();
+    const [startHour, setStartHour] = createSignal<string>("0");
     const [startMin, setStartMin] = createSignal<string>("00");
-    const [endHour, setEndHour] = createSignal<string>();
+    const [endHour, setEndHour] = createSignal<string>("0");
     const [endMin, setEndMin] = createSignal<string>("00");
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
 
