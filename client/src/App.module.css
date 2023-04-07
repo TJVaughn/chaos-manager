@@ -5,6 +5,7 @@
     font-size: calc(10px + 2vmin);
     color: white;
     scroll-behavior: smooth;
+    z-index: 500;
 }
 
 /* 1200px is min width for calendar page */
@@ -46,7 +47,6 @@
 }
 
 .categoryHeader {
-    width: 100%;
     border-bottom: 2px solid #444;
 }
 
@@ -91,6 +91,7 @@
     height: 4vh;
     position: fixed;
     width: 100%;
+    z-index: 500;
 }
 .spacer {
     height: 4vh;
@@ -147,11 +148,18 @@ a {
 
 .calendarContainer {
     display: grid;
-    grid-template-columns: repeat(7, 14%);
+    grid-template-columns: 2% repeat(7, 14%);
     border: 1px solid #444;
     text-align: center;
     /* flex-direction: row; */
     justify-content: space-evenly;
+}
+
+.calendarContainerOuter {
+    position: fixed;
+    width: 100%;
+    background-color: #222;
+    z-index: 500;
 }
 
 .calendarContainer .calheader {
@@ -171,9 +179,9 @@ a {
 
 .hourBlock {
     width: 14vw;
-    height: 100px;
+    height: 75px;
     background-color: #222;
-    border: 1px solid #000;
+    /* border: 1px solid #000; */
 }
 .hourBlockCurrDay {
     background-color: #242;
@@ -183,8 +191,8 @@ a {
 }
 
 .hourBlockContent {
-    padding: 3px;
-    height: 43%;
+    /* padding: 3px; */
+    height: 100%;
     border: 1px solid #000;
 }
 
@@ -235,4 +243,15 @@ a {
         right: 10px;
         transform: rotate(0deg);
     }
+}
+
+.eventBlock {
+    height: 75px;
+    width: 12vw;
+    /* background-color: #3338; */
+    z-index: 10;
+}
+
+.hourBlockInner {
+    padding: 3px;
 }

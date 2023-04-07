@@ -644,10 +644,41 @@ const Home: Component = () => {
     );
 };
 
+type Duration = {
+    id: number;
+    title: string;
+    description: string;
+    owner_id: number;
+    category_id: number;
+    category_name: string;
+    start_hour: string;
+    start_min: string;
+    end_hour: string;
+    end_min: string;
+    day_as_int: number;
+    color: string;
+};
+
 const Calendar: Component = () => {
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
     const [currDay, _setCurrDay] = createSignal(new Date().getDay());
     const [currHour, _setCurrHour] = createSignal(new Date().getHours());
+    const [durations, setDurations] = createSignal<Duration[]>([
+        {
+            id: 0,
+            category_id: 17,
+            day_as_int: 3,
+            description: "",
+            category_name: "Work",
+            title: "my first duration",
+            start_hour: "9",
+            start_min: "00",
+            end_hour: "17",
+            end_min: "00",
+            owner_id: 1,
+            color: "#886",
+        },
+    ]);
     const [days, _setDays] = createSignal([
         "Sunday",
         "Monday",
@@ -670,35 +701,97 @@ const Calendar: Component = () => {
 
     return (
         <div>
-            <div class={styles.calendarContainer}>
-                {days().map((day, index) => (
-                    <div class={styles.calheader}>{day}</div>
-                ))}
+            <div class={styles.calendarContainerOuter}>
+                <div class={styles.calendarContainer}>
+                    <div></div>
+                    {days().map((day, index) => (
+                        <div class={styles.calheader}>{day}</div>
+                    ))}
+                </div>
             </div>
+            <div class={styles.spacer}></div>
+
             <div class={styles.calendarContainer}>
+                <div class={styles.calendarHoursContainer}>
+                    {hours()!.map((hour) => (
+                        <div>{hour}</div>
+                    ))}
+                </div>
                 {days().map((day, index) => (
                     <div class={styles.calheader}>
                         <div class={styles.calendarHoursContainer}>
-                            {hours()!.map((hour, hourIndex) => (
-                                <div
-                                    id={
-                                        currHour() - 1 === hourIndex && currDay() === index
-                                            ? "scrollTo"
-                                            : ""
-                                    }
-                                    class={`${styles.hourBlock} ${
-                                        currDay() === index ? styles.hourBlockCurrDay : ""
-                                    } ${
-                                        currHour() === hourIndex && currDay() === index
-                                            ? styles.hourBlockCurrHour
-                                            : ""
-                                    }`}
-                                >
-                                    {" "}
-                                    <div class={styles.hourBlockContent}>{hour}:00</div>
-                                    <div class={styles.hourBlockContent}>{hour}:30</div>
-                                </div>
-                            ))}
+                            {hours()!.map((hour, hourIndex) => {
+                                if (
+                                    parseInt(durations()[0].start_hour, 10) === hour ||
+                                    parseInt(durations()[0].end_hour, 10) - 1 === hour ||
+                                    (hour > parseInt(durations()[0].start_hour, 10) &&
+                                        hour < parseInt(durations()[0].end_hour, 10) - 1)
+                                ) {
+                                    return (
+                                        <div
+                                            id={
+                                                currHour() - 1 === hourIndex && currDay() === index
+                                                    ? "scrollTo"
+                                                    : ""
+                                            }
+                                            class={`${styles.hourBlock} ${
+                                                currDay() === index ? styles.hourBlockCurrDay : ""
+                                            } ${
+                                                currHour() === hourIndex && currDay() === index
+                                                    ? styles.hourBlockCurrHour
+                                                    : ""
+                                            }`}
+                                        >
+                                            {" "}
+                                            <div class={styles.hourBlockContent}>
+                                                {/* {hour}:00 */}
+                                                <div
+                                                    class={styles.eventBlock}
+                                                    style={{
+                                                        "background-color": durations()[0].color,
+                                                        opacity: "0.8",
+                                                    }}
+                                                >
+                                                    <div class={styles.hourBlockInner}>
+                                                        {parseInt(durations()[0].start_hour, 10) ===
+                                                        hour
+                                                            ? durations()[0].title
+                                                            : ""}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div
+                                        id={
+                                            currHour() - 1 === hourIndex && currDay() === index
+                                                ? "scrollTo"
+                                                : ""
+                                        }
+                                        class={`${styles.hourBlock} ${
+                                            currDay() === index ? styles.hourBlockCurrDay : ""
+                                        } ${
+                                            currHour() === hourIndex && currDay() === index
+                                                ? styles.hourBlockCurrHour
+                                                : ""
+                                        }`}
+                                    >
+                                        <div class={styles.hourBlockContent}>
+                                            <div>
+                                                <div class={styles.hourBlockInner}>
+                                                    {parseInt(durations()[0].start_hour, 10) ===
+                                                    hour
+                                                        ? durations()[0].title
+                                                        : ""}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 ))}
