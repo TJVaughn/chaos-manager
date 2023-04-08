@@ -146,10 +146,33 @@ a {
     padding: 0;
 }
 
-.calendarContainer {
+.calContentContainer {
     display: grid;
     grid-template-columns: 2% repeat(7, 14%);
-    border: 1px solid #444;
+    grid-template-rows: repeat(24, 75px);
+    text-align: right;
+    justify-content: space-evenly;
+    font-size: 18px;
+}
+.calContentContainer div {
+    height: 75px;
+}
+.daysNamesContainer {
+    display: grid;
+    grid-template-columns: 2% repeat(7, 14%);
+    justify-content: space-evenly;
+    position: fixed;
+    width: 100%;
+    z-index: 500;
+    background-color: #222;
+    border-bottom: 1px solid #111;
+}
+
+.calendarContainer {
+    display: grid;
+    grid-template-columns: 2vw repeat(7, 14vw);
+    /* border: 1px solid #444; */
+    z-index: 1;
     text-align: center;
     /* flex-direction: row; */
     justify-content: space-evenly;
@@ -159,7 +182,7 @@ a {
     position: fixed;
     width: 100%;
     background-color: #222;
-    z-index: 500;
+    z-index: 0;
 }
 
 .calendarContainer .calheader {
@@ -178,8 +201,8 @@ a {
 }
 
 .hourBlock {
-    width: 14vw;
-    height: 75px;
+    /* width: 14vw; */
+    /* height: 75px; */
     background-color: #222;
     /* border: 1px solid #000; */
 }
@@ -193,7 +216,10 @@ a {
 .hourBlockContent {
     /* padding: 3px; */
     height: 100%;
-    border: 1px solid #000;
+    /* border: 1px solid #000; */
+}
+.hourBlockInner {
+    padding: 3px;
 }
 
 .addCalEventButton {
@@ -250,8 +276,4 @@ a {
     width: 12vw;
     /* background-color: #3338; */
     z-index: 10;
-}
-
-.hourBlockInner {
-    padding: 3px;
 }
