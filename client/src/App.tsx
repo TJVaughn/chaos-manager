@@ -646,13 +646,13 @@ const Home: Component = () => {
 
 type Duration = {
     id: number;
-    title: string;
     owner_id: number;
     category_id: number;
-    start_hour: string;
-    end_hour: string;
+    start_hour: number;
+    end_hour: number;
     day_as_int: number;
     color: string;
+    titles: string[];
 };
 
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -661,22 +661,32 @@ const Calendar: Component = () => {
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
     const [currDay, _setCurrDay] = createSignal(new Date().getDay());
     const [currHour, _setCurrHour] = createSignal(new Date().getHours());
-    const [durations, _setDurations] = createSignal<Duration[]>([
-        {
-            id: 0,
-            category_id: 17,
-            day_as_int: 1,
-            title: "work",
-            start_hour: "21",
-            end_hour: "24",
-            owner_id: 1,
-            color: "#886",
-        },
-    ]);
+    const [durations, setDurations] = createSignal<Duration[]>();
+    const [categories, setCategories] = createSignal<Category[]>();
 
-    onMount(() => {
+    const api = apiUtil();
+
+    onMount(async () => {
+        const durs: Duration[] = await api.get("/durations");
+        const cats: Category[] = await api.get("/categories");
+        // setCategories()
+        for (const dur of durs) {
+            for (const cat of cats) {
+                if (dur.category_id === cat.id) {
+                    dur.titles = [];
+                    dur.titles.push(cat.title);
+                    for (let i = 0; i < 2; i++) {
+                        if (cat.tasks_todo[i]) {
+                            dur.titles.push(cat.tasks_todo[i].title);
+                        }
+                    }
+                }
+            }
+        }
+
+        setDurations(durs);
         setTimeout(() => {
-            window.scrollTo(0, currHour() * 60);
+            window.scrollTo(0, currHour() * 50);
         }, 150);
     });
 
@@ -698,7 +708,7 @@ const Calendar: Component = () => {
                     </div>
                 ))}
             </div>
-
+            <div class={styles.spacer}></div>
             <div class={styles.calContentContainer}>
                 <div class={styles.hoursContainer}>
                     {hours()!.map((hour) => (
@@ -712,7 +722,7 @@ const Calendar: Component = () => {
                         <div class={styles.daysContainer}>
                             {hours().map((_, hourIndex) => {
                                 const { isMatch, dur, display } = isDurationThisDayThisHour(
-                                    durations(),
+                                    durations()!,
                                     dayIndex,
                                     hourIndex,
                                 );
@@ -730,7 +740,7 @@ const Calendar: Component = () => {
                                                 currHour={currHour()}
                                                 hourIndex={hourIndex}
                                                 dayIndex={dayIndex}
-                                                title={dur.title}
+                                                titles={dur.titles}
                                                 shouldDisplayTitle={display}
                                                 color={dur.color}
                                             />
@@ -758,8 +768,8 @@ const Calendar: Component = () => {
 
 const isDurationThisDayThisHour = (durations: Duration[], currDay: number, currHour: number) => {
     for (const i in durations) {
-        const startHour = parseInt(durations[i].start_hour, 10);
-        const endHour = parseInt(durations[i].end_hour, 10);
+        const startHour = durations[i].start_hour;
+        const endHour = durations[i].end_hour;
 
         if (durations[i].day_as_int === currDay) {
             if (startHour === currHour) {
@@ -797,11 +807,11 @@ const DurationHourBlock: Component<{
     hourIndex: number;
     currDay: number;
     dayIndex: number;
-    title: string;
+    titles: string[];
     shouldDisplayTitle: boolean;
     color: string;
 }> = (props) => {
-    const { currHour, hourIndex, currDay, dayIndex, title, shouldDisplayTitle, color } = props;
+    const { currHour, hourIndex, currDay, dayIndex, titles, shouldDisplayTitle, color } = props;
     return (
         <div
             id={currHour - 1 === hourIndex && currDay === dayIndex ? "scrollTo" : ""}
@@ -810,11 +820,20 @@ const DurationHourBlock: Component<{
             }`}
             style={{
                 "background-color": color,
-                opacity: "0.8",
+                opacity: "0.7",
             }}
         >
             <div class={styles.hourBlockContent}>
-                <div class={styles.hourBlockInner}>{shouldDisplayTitle ? title : ""}</div>
+                <div class={styles.hourBlockInner}>
+                    {shouldDisplayTitle
+                        ? titles?.map((t) => (
+                              <span class={styles.focusTitleList}>
+                                  {t}
+                                  <hr style={{ margin: "1px 0" }} />
+                              </span>
+                          ))
+                        : ""}
+                </div>
             </div>
         </div>
     );
@@ -883,19 +902,19 @@ const AddCalEventButton: Component<{ addCalEvent: CallableFunction }> = (props) 
 };
 const ScheduleEditor: Component = () => {
     const [startHour, setStartHour] = createSignal<string>("0");
-    const [endHour, setEndHour] = createSignal<string>("0");
+    const [endHour, setEndHour] = createSignal<string>("1");
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
     const [daysRecurr, setDaysRecurr] = createSignal<number[]>([...Array(7).fill(0)]);
     const [categories, setCategories] = createSignal<Category[]>();
-    const [selectedCat, setSelectedCat] = createSignal("");
-    const [color, setColor] = createSignal("");
+    const [selectedCat, setSelectedCat] = createSignal<string>();
+    const [color, setColor] = createSignal("#00d5ff");
 
     const api = apiUtil();
 
     onMount(async () => {
         const categoryReq = await api.get<Category[]>("/categories");
         setCategories(categoryReq);
-        setSelectedCat(categoryReq[0].title);
+        setSelectedCat(categoryReq[0].id.toString());
     });
     const handleTimeInput = (value: string, name: "start" | "end") => {
         if (name === "start") {
@@ -928,18 +947,36 @@ const ScheduleEditor: Component = () => {
         setColor(evt.currentTarget.value);
     };
 
-    const handleSubmit = (evt: any) => {
+    const handleSubmit = async (evt: any) => {
         evt.preventDefault();
 
-        const newEvent = {
-            category: selectedCat(),
-            daysOfOccurrance: daysRecurr(),
-            color: color(),
-            startHour: startHour(),
-            endHour: endHour(),
-        };
+        if (parseInt(startHour(), 10) > parseInt(endHour(), 10)) {
+            return console.log("start hour greater than end hour");
+        }
 
-        console.log(newEvent);
+        if (!selectedCat()) {
+            return;
+        }
+
+        const events: any = [];
+
+        for (const i in daysRecurr()) {
+            if (daysRecurr()[i] === 1) {
+                const newEvent = {
+                    category_id: parseInt(selectedCat()!, 10),
+                    day_as_int: parseInt(i, 10),
+                    color: color(),
+                    start_hour: parseInt(startHour(), 10),
+                    end_hour: parseInt(endHour(), 10),
+                    owner_id: 1,
+                };
+                events.push(newEvent);
+            }
+        }
+
+        console.log(events);
+
+        await api.post("/durations", events);
     };
 
     return (
@@ -986,7 +1023,7 @@ const ScheduleEditor: Component = () => {
             <div>
                 <select onChange={handleCategoryChange}>
                     {categories()?.map((cat) => {
-                        return <option value={cat.title}>{cat.title}</option>;
+                        return <option value={cat.id}>{cat.title}</option>;
                     })}
                 </select>
             </div>
@@ -994,6 +1031,7 @@ const ScheduleEditor: Component = () => {
                 <input
                     onInput={handleColorInput}
                     type="color"
+                    value={color()}
                 />
             </div>
 

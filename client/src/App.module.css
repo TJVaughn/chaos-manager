@@ -204,6 +204,7 @@ a {
 }
 .hourBlockInner {
     padding-right: 3px;
+    overflow: visible;
 }
 
 .addCalEventButton {
@@ -264,4 +265,12 @@ a {
 
 select {
     min-width: 75px;
+}
+
+.focusTitleList {
+    color: #000;
+    font-size: 13px;
+    background-color: #fff6;
+    padding-left: 3px;
+    border-radius: 5px;
 }
