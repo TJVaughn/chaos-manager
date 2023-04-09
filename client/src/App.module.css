@@ -177,27 +177,8 @@ a {
     /* flex-direction: row; */
     justify-content: space-evenly;
 }
-
-.calendarContainerOuter {
-    position: fixed;
-    width: 100%;
-    background-color: #222;
-    z-index: 0;
-}
-
-.calendarContainer .calheader {
-    border: 1px solid #222;
-    border-radius: 5px;
-    padding: 5px;
-    font-size: 0.9em;
-}
-
-.calendarHoursContainer {
-    display: grid;
-    flex-direction: column;
-    text-align: left;
-    justify-content: space-evenly;
-    font-size: 18px;
+.hourBlock:nth-child(even) {
+    background-color: #333;
 }
 
 .hourBlock {
@@ -209,8 +190,11 @@ a {
 .hourBlockCurrDay {
     background-color: #242;
 }
+.hourBlockCurrDay:nth-child(even) {
+    background-color: #295029;
+}
 .hourBlockCurrHour {
-    background-color: #246;
+    background-color: #246 !important;
 }
 
 .hourBlockContent {
@@ -219,7 +203,7 @@ a {
     /* border: 1px solid #000; */
 }
 .hourBlockInner {
-    padding: 3px;
+    padding-right: 3px;
 }
 
 .addCalEventButton {
@@ -276,4 +260,8 @@ a {
     width: 12vw;
     /* background-color: #3338; */
     z-index: 10;
+}
+
+select {
+    min-width: 75px;
 }

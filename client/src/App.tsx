@@ -647,17 +647,15 @@ const Home: Component = () => {
 type Duration = {
     id: number;
     title: string;
-    description: string;
     owner_id: number;
     category_id: number;
-    category_name: string;
     start_hour: string;
-    start_min: string;
     end_hour: string;
-    end_min: string;
     day_as_int: number;
     color: string;
 };
+
+const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const Calendar: Component = () => {
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
@@ -668,25 +666,12 @@ const Calendar: Component = () => {
             id: 0,
             category_id: 17,
             day_as_int: 1,
-            description: "",
-            category_name: "Work",
             title: "work",
-            start_hour: "9",
-            start_min: "00",
-            end_hour: "17",
-            end_min: "00",
+            start_hour: "21",
+            end_hour: "24",
             owner_id: 1,
             color: "#886",
         },
-    ]);
-    const [days, _setDays] = createSignal([
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
     ]);
 
     onMount(() => {
@@ -703,7 +688,7 @@ const Calendar: Component = () => {
         <div>
             <div class={styles.daysNamesContainer}>
                 <span></span>
-                {days().map((day, index) => (
+                {daysOfWeek.map((day, index) => (
                     <div
                         class={`${styles.calheader} ${
                             currDay() === index ? styles.hourBlockCurrDay : ""
@@ -722,7 +707,7 @@ const Calendar: Component = () => {
                         </div>
                     ))}
                 </div>
-                {days().map((_, dayIndex) => {
+                {daysOfWeek.map((_, dayIndex) => {
                     return (
                         <div class={styles.daysContainer}>
                             {hours().map((_, hourIndex) => {
@@ -829,9 +814,7 @@ const DurationHourBlock: Component<{
             }}
         >
             <div class={styles.hourBlockContent}>
-                <div>
-                    <div class={styles.hourBlockInner}>{shouldDisplayTitle ? title : ""}</div>
-                </div>
+                <div class={styles.hourBlockInner}>{shouldDisplayTitle ? title : ""}</div>
             </div>
         </div>
     );
@@ -900,61 +883,122 @@ const AddCalEventButton: Component<{ addCalEvent: CallableFunction }> = (props) 
 };
 const ScheduleEditor: Component = () => {
     const [startHour, setStartHour] = createSignal<string>("0");
-    const [startMin, setStartMin] = createSignal<string>("00");
     const [endHour, setEndHour] = createSignal<string>("0");
-    const [endMin, setEndMin] = createSignal<string>("00");
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
+    const [daysRecurr, setDaysRecurr] = createSignal<number[]>([...Array(7).fill(0)]);
+    const [categories, setCategories] = createSignal<Category[]>();
+    const [selectedCat, setSelectedCat] = createSignal("");
+    const [color, setColor] = createSignal("");
 
-    const handleTimeInput = (value: string, name: "start" | "end", type: "hour" | "min") => {
+    const api = apiUtil();
+
+    onMount(async () => {
+        const categoryReq = await api.get<Category[]>("/categories");
+        setCategories(categoryReq);
+        setSelectedCat(categoryReq[0].title);
+    });
+    const handleTimeInput = (value: string, name: "start" | "end") => {
         if (name === "start") {
-            if (type === "hour") {
-                setStartHour(value);
-            } else {
-                setStartMin(value);
-            }
+            setStartHour(value);
         } else {
-            if (type === "hour") {
-                setEndHour(value);
-            } else {
-                setEndMin(value);
-            }
+            setEndHour(value);
         }
-        console.log(`${startHour()}: ${startMin()}`);
-        console.log(`${endHour()}: ${endMin()}`);
+        console.log(`${startHour()}:`);
+        console.log(`${endHour()}:`);
     };
-    return (
-        <div>
-            <h2>Add category time block</h2>
-            <div>Day of week</div>
-            <br />
 
-            <div>Reoccuring</div>
+    const handleRecurrChange = (evt: any) => {
+        setDaysRecurr((prev) => {
+            if (prev[evt.currentTarget.name] === 1) {
+                prev[evt.currentTarget.name] = 0;
+            } else {
+                prev[evt.currentTarget.name] = 1;
+            }
+            return [...prev];
+        });
+    };
+
+    const handleCategoryChange = (evt: any) => {
+        console.log(`${evt.currentTarget.value}`);
+        setSelectedCat(evt.currentTarget.value);
+    };
+
+    const handleColorInput = (evt: any) => {
+        console.log(evt.currentTarget.value);
+        setColor(evt.currentTarget.value);
+    };
+
+    const handleSubmit = (evt: any) => {
+        evt.preventDefault();
+
+        const newEvent = {
+            category: selectedCat(),
+            daysOfOccurrance: daysRecurr(),
+            color: color(),
+            startHour: startHour(),
+            endHour: endHour(),
+        };
+
+        console.log(newEvent);
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <h2>Add category time block</h2>
+            <div>When does event occur?</div>
+            <br />
+            {daysOfWeek.map((day, i) => (
+                <label>
+                    <input
+                        name={i.toString()}
+                        onChange={handleRecurrChange}
+                        type="checkbox"
+                        value={daysRecurr()[i]}
+                    />
+                    {day}{" "}
+                </label>
+            ))}
+            <br />
             <br />
             <span>Start time: </span>
-            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "start", "hour")}>
+            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "start")}>
                 {hours().map((hour) => (
                     <option value={hour}>{hour}</option>
                 ))}
             </select>
-            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "start", "min")}>
-                <option value={"00"}>00</option>
-                <option value={"30"}>30</option>
-            </select>
+
             <br />
             <span>End time: </span>
-            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "end", "hour")}>
+            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "end")}>
+                {function () {
+                    let hoursPlus = hours();
+                    hoursPlus.push(24);
+                    hoursPlus.shift();
+                    return <span></span>;
+                }}
                 {hours().map((hour) => (
                     <option value={hour}>{hour}</option>
                 ))}
-            </select>
-            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "end", "min")}>
-                <option value={"00"}>00</option>
-                <option value={"30"}>30</option>
             </select>
             <br />
             <br />
             <div>Category</div>
-        </div>
+            <div>
+                <select onChange={handleCategoryChange}>
+                    {categories()?.map((cat) => {
+                        return <option value={cat.title}>{cat.title}</option>;
+                    })}
+                </select>
+            </div>
+            <div>
+                <input
+                    onInput={handleColorInput}
+                    type="color"
+                />
+            </div>
+
+            <button>save</button>
+        </form>
     );
 };
 
