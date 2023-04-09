@@ -2,6 +2,7 @@ use actix_cors::Cors;
 use actix_web::{http, web, App, HttpServer};
 mod category;
 mod connect;
+mod duration;
 mod task;
 
 fn routes(app: &mut web::ServiceConfig) {
@@ -29,6 +30,11 @@ fn routes(app: &mut web::ServiceConfig) {
                     .route(web::get().to(category::get_category_by_id))
                     .route(web::put().to(category::update_category))
                     .route(web::delete().to(category::delete_category_by_id)),
+            )
+            .service(
+                web::resource("durations")
+                    .route(web::get().to(duration::get_durations))
+                    .route(web::post().to(duration::create_many_durations)),
             ),
     );
 }

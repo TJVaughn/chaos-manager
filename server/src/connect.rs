@@ -58,6 +58,21 @@ pub async fn connect_to_db() -> Client {
         )
         .await
         .expect("create task table error");
+    client
+        .batch_execute(
+            "
+        CREATE TABLE IF NOT EXISTS public.duration (
+            id SERIAL PRIMARY KEY,
+            owner_id INT NOT NULL REFERENCES public.user,
+            category_id INT NOT NULL REFERENCES public.category,
+            start_hour INT NOT NULL,
+            end_hour INT NOT NULL,
+            day_as_int INT NOT NULL,
+            color VARCHAR(31)
+        );",
+        )
+        .await
+        .expect("create duration table error");
 
     return client;
 }

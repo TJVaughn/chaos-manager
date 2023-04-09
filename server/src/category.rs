@@ -38,7 +38,7 @@ pub async fn get_categories() -> impl Responder {
     let mut tasks: Vec<Task> = Vec::new();
 
     for row in client
-        .query("SELECT * FROM task", &[])
+        .query("SELECT * FROM task ORDER BY priority ASC", &[])
         .await
         .expect("error getting tasks")
     {
