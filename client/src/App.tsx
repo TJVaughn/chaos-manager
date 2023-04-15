@@ -2,6 +2,7 @@ import { Component, For, onMount, createSignal, ParentComponent, createEffect } 
 import { Routes, Route, A } from "@solidjs/router";
 import styles from "./App.module.css";
 import axios from "axios";
+import { EditSVG } from "./components/EditSVG";
 
 type TaskData = {
     title: string;
@@ -136,8 +137,7 @@ const Task: Component<{
     };
 
     const handleClick = () => {
-        console.log(props.item);
-        window.location.href = `/editor/task/${props.item.id}`;
+        props.handleItemClick(props.item);
     };
     return (
         <div
@@ -169,7 +169,8 @@ const Category: Component<{
     focusIdx: number;
 }> = (props) => {
     const { category, updateCategory, categoryIndex, categoryDataRefresh, focusIdx } = props;
-
+    const [catSettingsDropDown, setCatSettingsDropDown] = createSignal(false);
+    const [easyDeleteTasks, setEasyDeleteTasks] = createSignal(false);
     const [startComponent, setStartComponent] = createSignal({
         item: "",
         index: 0,
@@ -242,23 +243,30 @@ const Category: Component<{
         }
     };
 
-    const handleItemClick = (index: number, is_complete: boolean) => {
-        let taskArray = [...category.tasks_todo];
-        let completedTasksArr = [...category.tasks_done];
-        if (is_complete) {
-            completedTasksArr[index].is_complete = !completedTasksArr[index].is_complete;
-            let item = completedTasksArr.splice(index, 1);
-            taskArray.push(item[0]);
-        } else {
-            taskArray[index].is_complete = !taskArray[index].is_complete;
-            let item = taskArray.splice(index, 1);
-            completedTasksArr.unshift(item[0]);
+    const handleItemClick = async (item: Task) => {
+        if (!easyDeleteTasks()) {
+            return (window.location.href = `/editor/task/${item.id}`);
         }
-        let newCategory = { ...category };
 
-        newCategory.tasks_todo = taskArray;
-        newCategory.tasks_done = completedTasksArr;
-        updateCategory(newCategory, categoryIndex);
+        console.log("delete item: ", item.title);
+        await api.delete(`/task/${item.id}`);
+        categoryDataRefresh();
+        // let taskArray = [...category.tasks_todo];
+        // let completedTasksArr = [...category.tasks_done];
+        // if (is_complete) {
+        //     completedTasksArr[index].is_complete = !completedTasksArr[index].is_complete;
+        //     let item = completedTasksArr.splice(index, 1);
+        //     taskArray.push(item[0]);
+        // } else {
+        //     taskArray[index].is_complete = !taskArray[index].is_complete;
+        //     let item = taskArray.splice(index, 1);
+        //     completedTasksArr.unshift(item[0]);
+        // }
+        // let newCategory = { ...category };
+
+        // newCategory.tasks_todo = taskArray;
+        // newCategory.tasks_done = completedTasksArr;
+        // updateCategory(newCategory, categoryIndex);
     };
 
     const handleInputSubmit = async (target: string) => {
@@ -286,17 +294,35 @@ const Category: Component<{
                     onClick={handleCategoryClick}
                     href={`/category/${props.category.id}`}
                 >
-                    {props.category.title}
+                    {props.category.title}{" "}
                 </A>
+                <button
+                    onClick={() => {
+                        setCatSettingsDropDown(!catSettingsDropDown());
+                        setEasyDeleteTasks(!easyDeleteTasks());
+                    }}
+                >
+                    <EditSVG />
+                </button>
+                {catSettingsDropDown() ? (
+                    <div>
+                        <button onClick={() => setEasyDeleteTasks(!easyDeleteTasks())}>
+                            start easy delete?
+                        </button>
+                        <span class={styles.smallText}>click to delete tasks</span>
+                    </div>
+                ) : (
+                    ""
+                )}
             </div>
             <div
-                style={{
-                    "overflow-y": "scroll",
-                    width: "100%",
-                    height: "100%",
-                    "padding-right": "17px",
-                    "box-sizing": "content-box",
-                }}
+                style={
+                    easyDeleteTasks()
+                        ? {
+                              background: "red",
+                          }
+                        : {}
+                }
                 class={styles.categoryTask}
             >
                 <AddTaskInput
@@ -662,14 +688,21 @@ const Calendar: Component = () => {
     const [currDay, _setCurrDay] = createSignal(new Date().getDay());
     const [currHour, _setCurrHour] = createSignal(new Date().getHours());
     const [durations, setDurations] = createSignal<Duration[]>();
-    const [categories, setCategories] = createSignal<Category[]>();
 
     const api = apiUtil();
 
     onMount(async () => {
+        setTimeout(() => {
+            if (currHour() > 20) {
+                window.scrollTo(0, currHour() * 70);
+            } else {
+                window.scrollTo(0, currHour() * 30);
+            }
+        }, 150);
+
         const durs: Duration[] = await api.get("/durations");
         const cats: Category[] = await api.get("/categories");
-        // setCategories()
+
         for (const dur of durs) {
             for (const cat of cats) {
                 if (dur.category_id === cat.id) {
@@ -683,11 +716,7 @@ const Calendar: Component = () => {
                 }
             }
         }
-
         setDurations(durs);
-        setTimeout(() => {
-            window.scrollTo(0, currHour() * 50);
-        }, 150);
     });
 
     const handleAddCalEvent = () => {
@@ -922,8 +951,6 @@ const ScheduleEditor: Component = () => {
         } else {
             setEndHour(value);
         }
-        console.log(`${startHour()}:`);
-        console.log(`${endHour()}:`);
     };
 
     const handleRecurrChange = (evt: any) => {
@@ -933,17 +960,15 @@ const ScheduleEditor: Component = () => {
             } else {
                 prev[evt.currentTarget.name] = 1;
             }
-            return [...prev];
+            return prev;
         });
     };
 
     const handleCategoryChange = (evt: any) => {
-        console.log(`${evt.currentTarget.value}`);
         setSelectedCat(evt.currentTarget.value);
     };
 
     const handleColorInput = (evt: any) => {
-        console.log(evt.currentTarget.value);
         setColor(evt.currentTarget.value);
     };
 
@@ -952,10 +977,6 @@ const ScheduleEditor: Component = () => {
 
         if (parseInt(startHour(), 10) > parseInt(endHour(), 10)) {
             return console.log("start hour greater than end hour");
-        }
-
-        if (!selectedCat()) {
-            return;
         }
 
         const events: any = [];
@@ -998,7 +1019,10 @@ const ScheduleEditor: Component = () => {
             <br />
             <br />
             <span>Start time: </span>
-            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "start")}>
+            <select
+                value={startHour()}
+                onChange={(evt) => handleTimeInput(evt.currentTarget.value, "start")}
+            >
                 {hours().map((hour) => (
                     <option value={hour}>{hour}</option>
                 ))}
@@ -1006,7 +1030,10 @@ const ScheduleEditor: Component = () => {
 
             <br />
             <span>End time: </span>
-            <select onChange={(evt) => handleTimeInput(evt.currentTarget.value, "end")}>
+            <select
+                value={endHour()}
+                onChange={(evt) => handleTimeInput(evt.currentTarget.value, "end")}
+            >
                 {function () {
                     let hoursPlus = hours();
                     hoursPlus.push(24);
