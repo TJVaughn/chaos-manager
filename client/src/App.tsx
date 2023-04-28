@@ -1,167 +1,13 @@
-import { Component, For, onMount, createSignal, ParentComponent, createEffect } from "solid-js";
+import { Component, For, onMount, createSignal, ParentComponent } from "solid-js";
 import { Routes, Route, A } from "@solidjs/router";
 import styles from "./App.module.css";
-import axios from "axios";
 import { EditSVG } from "./components/EditSVG";
+import { Category, Task, TaskData } from "./components/types";
+import apiUtil from "./utils/apiUtil";
+import { AddTaskInput } from "./components/AddTaskInput";
+import { TaskComponent } from "./components/TaskComponent";
 
-type TaskData = {
-    title: string;
-    description: string;
-    is_complete: boolean;
-    priority: number;
-    owner_id: number;
-    category_id: number;
-};
-
-type Task = TaskData & {
-    id: number;
-};
-
-type Category = {
-    id: number;
-    title: string;
-    description: string;
-    priority: number;
-    owner_id: number;
-    tasks_todo: Task[];
-    tasks_done: Task[];
-};
-
-function apiUtil() {
-    const api = {
-        get: async function get<T>(endpoint: string): Promise<T> {
-            const req = await fetch(`http://localhost:8080${endpoint}`);
-            const data = await req.json();
-            return data;
-        },
-        post: async function post<T, RT>(endpoint: string, data: T): Promise<RT> {
-            const req = await axios({
-                url: `http://localhost:8080${endpoint}`,
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                data,
-            });
-            return req.data;
-        },
-        put: async function put<T>(endpoint: string, data: T): Promise<T> {
-            const req = await axios({
-                url: `http://localhost:8080${endpoint}`,
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                data,
-            });
-            return req.data;
-        },
-        delete: async function deletElement<T>(endpoint: string): Promise<T> {
-            const req = await axios({
-                url: `http://localhost:8080${endpoint}`,
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-            return req.data;
-        },
-    };
-
-    return api;
-}
-
-const defaultTaskState: Task = {
-    title: "loading...",
-    description: "",
-    category_id: 1,
-    id: 1,
-    owner_id: 1,
-    priority: 1,
-    is_complete: false,
-};
-
-const AddTaskInput: Component<{ handleInputSubmit: CallableFunction; shouldFocus: boolean }> = (
-    props,
-) => {
-    const [value, setValue] = createSignal("");
-    let currentInputRef: HTMLInputElement;
-
-    const handleSubmit = (evt: SubmitEvent) => {
-        evt.preventDefault();
-        props.handleInputSubmit(value(), currentInputRef);
-        setValue("");
-    };
-
-    onMount(() => {
-        if (props.shouldFocus) {
-            currentInputRef.focus();
-        }
-    });
-    return (
-        <form
-            onSubmit={handleSubmit}
-            class={styles.addTaskContainer}
-        >
-            <input
-                ref={currentInputRef!}
-                type="text"
-                value={value()}
-                onChange={(evt) => setValue(evt.currentTarget.value)}
-                class={styles.addTaskInput}
-                placeholder="add next todo"
-            />
-        </form>
-    );
-};
-
-const Task: Component<{
-    item: Task;
-    index: number;
-    startComponent: any;
-    endComponent: any;
-    movElement: CallableFunction;
-    setEndComponent: CallableFunction;
-    handleItemClick: CallableFunction;
-    setStartComponent: CallableFunction;
-}> = (props) => {
-    const handleDragStart = () => {
-        props.setStartComponent({ item: props.item, index: props.index });
-    };
-    const handleDragEnd = () => {
-        props.movElement(props.startComponent, props.endComponent);
-    };
-
-    const handleDragOver = () => {
-        props.setEndComponent({ item: props.item, index: props.index });
-    };
-
-    const handleClick = () => {
-        props.handleItemClick(props.item);
-    };
-    return (
-        <div
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            draggable={true}
-            onClick={handleClick}
-            class={styles.taskContainer}
-        >
-            <A
-                class={`${styles.taskTitle} ${
-                    props.item.is_complete ? styles.taskTitleComplete : ""
-                }`}
-                href={`/editor/task/${props.item.id}`}
-                onClick={handleClick}
-            >
-                {props.item.is_complete ? <s>{props.item.title}</s> : props.item.title}
-            </A>
-        </div>
-    );
-};
-
-const Category: Component<{
+const CategoryComponent: Component<{
     category: Category;
     updateCategory: (category: Category, index: number) => void;
     categoryDataRefresh: CallableFunction;
@@ -334,7 +180,7 @@ const Category: Component<{
                     fallback={<div>No items, add a task</div>}
                 >
                     {(item, index) => (
-                        <Task
+                        <TaskComponent
                             item={item}
                             index={index()}
                             handleItemClick={handleItemClick}
@@ -352,7 +198,7 @@ const Category: Component<{
                     fallback={<div>Nothin done yet</div>}
                 >
                     {(item, index) => (
-                        <Task
+                        <TaskComponent
                             item={item}
                             index={index()}
                             handleItemClick={handleItemClick}
@@ -375,6 +221,16 @@ const Category: Component<{
 const TaskEditorCanvas: Component<{ type: "task" | "category" }> = (props) => {
     const api = apiUtil();
 
+
+    const defaultTaskState: Task = {
+        title: "loading...",
+        description: "",
+        category_id: 1,
+        id: 1,
+        owner_id: 1,
+        priority: 1,
+        is_complete: false,
+    };
     const [deletePrompt, setDeletePrompt] = createSignal<boolean>(false);
     const [element, setElement] = createSignal<Task>(defaultTaskState);
 
@@ -644,7 +500,7 @@ const Home: Component = () => {
                     fallback={<div>No categories found</div>}
                 >
                     {(item, index) => (
-                        <Category
+                        <CategoryComponent
                             updateCategory={handleUpdateCategory}
                             categoryDataRefresh={handleCategoryDataRefresh}
                             category={item}
