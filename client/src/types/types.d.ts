@@ -21,3 +21,15 @@ export type Category = {
     tasks_todo: Task[];
     tasks_done: Task[];
 };
+
+export type Duration = {
+    id: number;
+    owner_id: number;
+    category_id: number;
+    start_hour: number;
+    end_hour: number;
+    day_as_int: number;
+    color: string;
+    titles: string[];
+};
+

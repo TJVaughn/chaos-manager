@@ -1,7 +1,7 @@
 import { A } from "@solidjs/router";
 import { Component } from "solid-js";
 import styles from "../App.module.css";
-import { Task } from "./types";
+import { Task } from "../types/types";
 
 export const TaskComponent: Component<{
     item: Task;
