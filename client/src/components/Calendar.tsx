@@ -1,10 +1,9 @@
-import { Component, createSignal,  For,  onMount, ParentComponent } from "solid-js";
-import { Category, Duration, Task } from "../types/types";
+import { Component, createSignal,  onMount, ParentComponent } from "solid-js";
+import { Category, Duration} from "../types/types";
 import apiUtil from "../utils/apiUtil";
 import styles from "../App.module.css";
-import { CategoryComponent } from "./CategoryComponent";
-import { A } from "@solidjs/router";
 import { daysOfWeek } from "../utils/daysOfWeek";
+import { A } from "@solidjs/router";
 
 
 export const Calendar: Component = () => {
@@ -96,6 +95,7 @@ export const Calendar: Component = () => {
                                                 titles={dur.titles}
                                                 shouldDisplayTitle={display}
                                                 color={dur.color}
+                                                dur={dur}
                                             />
                                         </EmptyHourBlock>
                                     );
@@ -163,8 +163,9 @@ const DurationHourBlock: Component<{
     titles: string[];
     shouldDisplayTitle: boolean;
     color: string;
+    dur: Duration;
 }> = (props) => {
-    const { currHour, hourIndex, currDay, dayIndex, titles, shouldDisplayTitle, color } = props;
+    const { dur, currHour, hourIndex, currDay, dayIndex, titles, shouldDisplayTitle, color } = props;
     return (
         <div
             id={currHour - 1 === hourIndex && currDay === dayIndex ? "scrollTo" : ""}
@@ -176,6 +177,8 @@ const DurationHourBlock: Component<{
                 opacity: "0.7",
             }}
         >
+
+        <A href={`/editor/schedule/${dur.id}`}>
             <div class={styles.hourBlockContent}>
                 <div class={styles.hourBlockInner}>
                     {shouldDisplayTitle
@@ -188,6 +191,7 @@ const DurationHourBlock: Component<{
                         : ""}
                 </div>
             </div>
+        </A>
         </div>
     );
 };
@@ -199,6 +203,7 @@ const EmptyHourBlock: ParentComponent<{
     dayIndex: number;
 }> = (props) => {
     const { currHour, hourIndex, currDay, dayIndex } = props;
+    
     return (
         <div
             id={currHour - 1 === hourIndex && currDay === dayIndex ? "scrollTo" : ""}
