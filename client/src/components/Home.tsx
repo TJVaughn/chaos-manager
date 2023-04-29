@@ -67,7 +67,7 @@ export const Home: Component = () => {
             <header
                 class={styles.header}
                 style={
-                    categories() && categories()!.length > 3
+                    categories() && categories()!.length > 4
                         ? { "justify-content": "flex-start" }
                         : { "justify-content": "space-evenly" }
                 }
@@ -88,7 +88,7 @@ export const Home: Component = () => {
                 </For>
             </header>
             <div>
-                {categories() && categories()!.length >= 3 ? (
+                {categories() && categories()!.length >= 4 ? (
                     ""
                 ) : (
                     <A
