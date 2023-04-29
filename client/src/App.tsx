@@ -4,7 +4,7 @@ import styles from "./App.module.css";
 import { Home } from "./components/Home";
 import { Calendar } from "./components/Calendar";
 import { TaskEditorCanvas } from "./components/TaskEditorCanvas";
-import { ScheduleEditor } from "./ScheduleEditor";
+import { ScheduleEditor } from "./components/ScheduleEditor";
 
 const App: Component = () => {
     return (

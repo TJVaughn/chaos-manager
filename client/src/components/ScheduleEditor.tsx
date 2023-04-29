@@ -1,7 +1,7 @@
 import { Component, createSignal, onMount } from "solid-js";
-import { Category } from "./types/types";
-import apiUtil from "./utils/apiUtil";
-import { daysOfWeek } from "./utils/daysOfWeek";
+import { Category } from "../types/types";
+import apiUtil from "../utils/apiUtil";
+import { daysOfWeek } from "../utils/daysOfWeek";
 
 export const ScheduleEditor: Component = () => {
     const [startHour, setStartHour] = createSignal<string>("0");
