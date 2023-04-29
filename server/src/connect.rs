@@ -1,9 +1,13 @@
 use tokio;
 use tokio_postgres::{Client, NoTls};
+use std::env;
+extern crate dotenv;
 
 pub async fn connect_to_db() -> Client {
-    let url = "postgresql://chaos:changeit@localhost:5432/chaos";
-    let (client, connection) = tokio_postgres::connect(url, NoTls)
+    dotenv::dotenv().expect("Must be illiterate because I can't read an .env file: ");
+    
+    let url = env::var("DB_URL").expect("Hey mann, there's no variable!");
+    let (client, connection) = tokio_postgres::connect(&url, NoTls)
         .await
         .expect("erorr connecting");
 
