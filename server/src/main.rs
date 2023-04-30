@@ -32,9 +32,12 @@ fn routes(app: &mut web::ServiceConfig) {
                     .route(web::delete().to(category::delete_category_by_id)),
             )
             .service(
+                web::resource("duration")
+                    .route(web::post().to(duration::create_duration)),
+            )
+            .service(
                 web::resource("durations")
-                    .route(web::get().to(duration::get_durations))
-                    .route(web::post().to(duration::create_many_durations)),
+                    .route(web::get().to(duration::get_durations)),
             ),
     );
 }
