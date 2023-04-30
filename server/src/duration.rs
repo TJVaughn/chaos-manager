@@ -17,7 +17,7 @@ pub struct Duration {
     pub category_id: i32,
     pub start_hour: i32,
     pub end_hour: i32,
-    pub day_as_int: i32,
+    pub recurring_days:Vec<i32>,
     pub color: String,
 }
 
@@ -27,7 +27,7 @@ pub struct DurationReq {
     category_id: i32,
     start_hour: i32,
     end_hour: i32,
-    day_as_int: i32,
+    recurring_days: Vec<i32>,
     color: String,
 }
 
@@ -48,7 +48,7 @@ pub async fn get_durations() -> impl Responder {
             category_id: row.get(2),
             start_hour: row.get(3),
             end_hour: row.get(4),
-            day_as_int: row.get(5),
+            recurring_days: row.get(5),
             color: row.get(6),
         };
 
@@ -57,16 +57,16 @@ pub async fn get_durations() -> impl Responder {
     return HttpResponse::Ok().json(durations);
 }
 
-// #[post("/durations")]
-pub async fn create_many_durations(
+// #[post("/duration")
+pub async fn create_duration(
     _req: HttpRequest,
-    params: web::Json<Vec<DurationReq>>,
+    params: web::Json<DurationReq>,
 ) -> impl Responder {
     let client = connect_to_db().await;
 
-    let durations = params.0;
+    let duration = params.0;
 
-    for i in 0..durations.len() {
+    // for i in 0..durations.len() {
         let stmt = client
             .prepare(
                 "INSERT INTO public.duration (
@@ -74,7 +74,7 @@ pub async fn create_many_durations(
                 category_id,
                 start_hour,
                 end_hour,
-                day_as_int,
+                recurring_days,
                 color
             ) VALUES ($1, $2, $3, $4, $5, $6)",
             )
@@ -82,12 +82,12 @@ pub async fn create_many_durations(
             .expect("error preparing create statement");
 
         let dur = DurationReq {
-            owner_id: durations[i].owner_id,
-            category_id: durations[i].category_id,
-            start_hour: durations[i].start_hour,
-            end_hour: durations[i].end_hour,
-            day_as_int: durations[i].day_as_int,
-            color: durations[i].color.to_owned(),
+            owner_id: duration.owner_id,
+            category_id: duration.category_id,
+            start_hour: duration.start_hour,
+            end_hour: duration.end_hour,
+            recurring_days: duration.recurring_days,
+            color: duration.color.to_owned(),
         };
 
         client
@@ -98,13 +98,13 @@ pub async fn create_many_durations(
                     &dur.category_id,
                     &dur.start_hour,
                     &dur.end_hour,
-                    &dur.day_as_int,
+                    &dur.recurring_days,
                     &dur.color,
                 ],
             )
             .await
             .expect("Error creating duration");
-    }
+    //}
     return HttpResponse::Ok()
         .content_type("application/json")
         .json("{success: 200}");
