@@ -1,5 +1,5 @@
 import { Component, createSignal, onMount } from "solid-js";
-import { Category } from "../types/types";
+import { Category, Duration } from "../types/types";
 import apiUtil from "../utils/apiUtil";
 import { daysOfWeek } from "../utils/daysOfWeek";
 
@@ -15,6 +15,9 @@ export const ScheduleEditor: Component = () => {
     const api = apiUtil();
 
     onMount(async () => {
+        const id = window.location.pathname.split("/editor/schedule/")[1];
+        const durationReq = await api.get<Duration>(`/duration/${id}`);
+        console.log(durationReq);
         const categoryReq = await api.get<Category[]>("/categories");
         setCategories(categoryReq);
         setSelectedCat(categoryReq[0].id.toString());
@@ -53,25 +56,16 @@ export const ScheduleEditor: Component = () => {
             return console.log("start hour greater than end hour");
         }
 
-        const events: any = [];
+        const duration: Omit<Duration, "id" | "titles"> = {
+            color: color(),
+            category_id: parseInt(selectedCat()!, 10),
+            recurring_days: daysRecurr(),
+            start_hour: parseInt(startHour(), 10),
+            end_hour: parseInt(endHour(), 10),
+            owner_id: 1,
+        };
 
-        for (const i in daysRecurr()) {
-            if (daysRecurr()[i] === 1) {
-                const newEvent = {
-                    category_id: parseInt(selectedCat()!, 10),
-                    day_as_int: parseInt(i, 10),
-                    color: color(),
-                    start_hour: parseInt(startHour(), 10),
-                    end_hour: parseInt(endHour(), 10),
-                    owner_id: 1,
-                };
-                events.push(newEvent);
-            }
-        }
-
-        console.log(events);
-
-        await api.post("/durations", events);
+        await api.post("/duration",duration);
     };
 
     return (
