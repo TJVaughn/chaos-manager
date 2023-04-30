@@ -22,13 +22,24 @@ export type Category = {
     tasks_done: Task[];
 };
 
-export type Duration = {
+export type DurationSplit = {
     id: number;
     owner_id: number;
     category_id: number;
     start_hour: number;
     end_hour: number;
     day_as_int: number;
+    color: string;
+    titles: string[];
+};
+
+export type Duration = {
+    id: number;
+    owner_id: number;
+    category_id: number;
+    start_hour: number;
+    end_hour: number;
+    recurring_days: number[];
     color: string;
     titles: string[];
 };
