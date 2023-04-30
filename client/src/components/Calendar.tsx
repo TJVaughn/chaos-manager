@@ -1,16 +1,33 @@
 import { Component, createSignal,  onMount, ParentComponent } from "solid-js";
-import { Category, Duration} from "../types/types";
+import { Category, Duration, DurationSplit} from "../types/types";
 import apiUtil from "../utils/apiUtil";
 import styles from "../App.module.css";
 import { daysOfWeek } from "../utils/daysOfWeek";
 import { A } from "@solidjs/router";
 
+const splitDurations = (durations: Duration[])=>{
+    let splitDurs: DurationSplit[] = [];
+
+    for (const i in durations){
+        const dur = durations[i];
+
+        for(const x in dur.recurring_days){
+            if(dur.recurring_days[x] === 1){ 
+                splitDurs.push({
+                    day_as_int: parseInt(x, 10),
+                    ...dur
+                });
+            }
+        }
+    }
+    return splitDurs;
+}; 
 
 export const Calendar: Component = () => {
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
     const [currDay, _setCurrDay] = createSignal(new Date().getDay());
     const [currHour, _setCurrHour] = createSignal(new Date().getHours());
-    const [durations, setDurations] = createSignal<Duration[]>();
+    const [durations, setDurations] = createSignal<DurationSplit[]>();
 
     const api = apiUtil();
 
@@ -39,7 +56,8 @@ export const Calendar: Component = () => {
                 }
             }
         }
-        setDurations(durs);
+
+        setDurations(splitDurations(durs));
     });
 
     const handleAddCalEvent = () => {
@@ -119,7 +137,7 @@ export const Calendar: Component = () => {
     );
 };
 
-const isDurationThisDayThisHour = (durations: Duration[], currDay: number, currHour: number) => {
+const isDurationThisDayThisHour = (durations: DurationSplit[], currDay: number, currHour: number) => {
     for (const i in durations) {
         const startHour = durations[i].start_hour;
         const endHour = durations[i].end_hour;
@@ -163,7 +181,7 @@ const DurationHourBlock: Component<{
     titles: string[];
     shouldDisplayTitle: boolean;
     color: string;
-    dur: Duration;
+    dur: DurationSplit;
 }> = (props) => {
     const { dur, currHour, hourIndex, currDay, dayIndex, titles, shouldDisplayTitle, color } = props;
     return (
