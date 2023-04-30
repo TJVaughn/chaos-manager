@@ -1,6 +1,6 @@
 use crate::connect::connect_to_db;
 use actix_web::{
-    web::{self},
+    web::{self, Path},
     HttpRequest, HttpResponse, Responder,
 };
 use serde::{Deserialize, Serialize};
@@ -57,6 +57,30 @@ pub async fn get_durations() -> impl Responder {
     return HttpResponse::Ok().json(durations);
 }
 
+// #[get("/duration/{id}")]
+pub async fn get_duration_by_id(info: Path<InfoPathId>) -> impl Responder {
+    let id = info.id;
+    let client = connect_to_db().await;
+
+    let row = client
+        .query_one("SELECT * FROM duration WHERE id=$1", &[&id])
+        .await
+        .expect("error getting duration");
+
+    let duration= Duration {
+        id: row.get(0),
+        owner_id: row.get(1),
+        category_id: row.get(2),
+        start_hour: row.get(3),
+        end_hour: row.get(4),
+        recurring_days: row.get(5),
+        color: row.get(6)
+    };
+
+    return HttpResponse::Ok().json(duration);
+}
+
+
 // #[post("/duration")
 pub async fn create_duration(
     _req: HttpRequest,
@@ -109,3 +133,55 @@ pub async fn create_duration(
         .content_type("application/json")
         .json("{success: 200}");
 }
+
+
+// #[put("/duration")]
+pub async fn update_duration(_req: HttpRequest, params: web::Json<Duration>) -> impl Responder {
+    let client = connect_to_db().await;
+
+    let dur = Duration {
+        id: params.id,
+        owner_id: params.owner_id,
+        category_id: params.category_id,
+        start_hour: params.start_hour,
+        end_hour: params.end_hour,
+        recurring_days: params.recurring_days.to_owned(),
+        color: params.color.to_owned(),
+    };
+
+    match client
+        .execute(
+            "UPDATE public.duration
+            SET owner_id = $1,
+                category_id= $2,
+                start_hour= $3,
+                end_hour= $4,
+                recurring_days= $5,
+                color = $6
+             WHERE id = $7",
+            &[
+                &dur.owner_id,
+                &dur.category_id,
+                &dur.start_hour,
+                &dur.end_hour,
+                &dur.recurring_days,
+                &dur.color,
+                &dur.id
+            ],
+        )
+        .await
+    {
+        Ok(_data) => {
+            return HttpResponse::Created()
+                .content_type("application/json")
+                .json(dur);
+        }
+        Err(err) => {
+            return HttpResponse::Conflict()
+                .content_type("application/json")
+                .json(err.to_string());
+        }
+    }
+}
+
+
