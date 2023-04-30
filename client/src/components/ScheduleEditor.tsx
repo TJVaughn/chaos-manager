@@ -6,6 +6,7 @@ import { daysOfWeek } from "../utils/daysOfWeek";
 export const ScheduleEditor: Component = () => {
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
     const [categories, setCategories] = createSignal<Category[]>();
+    const [deletePrompt, setDeletePrompt] = createSignal(false);
     const [duration, setDuration] = createSignal<Duration>({
         id: -1,
         category_id: 0,
@@ -95,6 +96,11 @@ export const ScheduleEditor: Component = () => {
         return await api.post("/duration", polyDur);
     };
 
+    const handleDelete = async () => {
+        await api.delete(`/duration/${duration().id}`);
+        window.location.href = "/focus";
+    };
+
     return (
         <form onSubmit={handleSubmit}>
             <h2>Add category time block</h2>
@@ -159,6 +165,17 @@ export const ScheduleEditor: Component = () => {
             </div>
 
             <button>save</button>
+                <div>
+                    {deletePrompt() ? (
+                        <div>
+                            <p>are you sure?</p>
+                            <button onClick={handleDelete}>yes, delete</button>
+                        </div>
+                    ) : (
+                        <button onClick={() => setDeletePrompt(!deletePrompt())}>delete</button>
+                    )}
+                </div>
+ 
         </form>
     );
 };
