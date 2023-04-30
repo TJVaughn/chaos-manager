@@ -11,16 +11,26 @@ export const ScheduleEditor: Component = () => {
     const [categories, setCategories] = createSignal<Category[]>();
     const [selectedCat, setSelectedCat] = createSignal<string>();
     const [color, setColor] = createSignal("#00d5ff");
+    const [duration, setDuration] = createSignal<Duration>();
+    const [id, setId] = createSignal<string>();
 
     const api = apiUtil();
 
     onMount(async () => {
         const id = window.location.pathname.split("/editor/schedule/")[1];
-        const durationReq = await api.get<Duration>(`/duration/${id}`);
-        console.log(durationReq);
         const categoryReq = await api.get<Category[]>("/categories");
+        setId(id);
         setCategories(categoryReq);
-        setSelectedCat(categoryReq[0].id.toString());
+        if (!id) return console.log("no id");
+
+        const durationReq = await api.get<Duration>(`/duration/${id}`);
+
+        setColor(durationReq.color);
+        setDaysRecurr(durationReq.recurring_days);
+        setStartHour(durationReq.start_hour.toString());
+        setEndHour(durationReq.end_hour.toString());
+        setSelectedCat(durationReq.category_id.toString());
+        setDuration(durationReq);
     });
     const handleTimeInput = (value: string, name: "start" | "end") => {
         if (name === "start") {
@@ -55,8 +65,7 @@ export const ScheduleEditor: Component = () => {
         if (parseInt(startHour(), 10) > parseInt(endHour(), 10)) {
             return console.log("start hour greater than end hour");
         }
-
-        const duration: Omit<Duration, "id" | "titles"> = {
+        const polyDur: Omit<Duration, "titles" | "id"> = {
             color: color(),
             category_id: parseInt(selectedCat()!, 10),
             recurring_days: daysRecurr(),
@@ -65,7 +74,14 @@ export const ScheduleEditor: Component = () => {
             owner_id: 1,
         };
 
-        await api.post("/duration",duration);
+        if(id()){
+            const dur = {
+                id:  duration()!.id,
+                ...polyDur
+            }
+            return await api.put("/duration",dur);
+        }
+        return await api.post("/duration", polyDur);
     };
 
     return (
@@ -80,6 +96,7 @@ export const ScheduleEditor: Component = () => {
                         onChange={handleRecurrChange}
                         type="checkbox"
                         value={daysRecurr()[i]}
+                        checked={daysRecurr()[i] === 1}
                     />
                     {day}{" "}
                 </label>
@@ -116,7 +133,7 @@ export const ScheduleEditor: Component = () => {
             <br />
             <div>Category</div>
             <div>
-                <select onChange={handleCategoryChange}>
+                <select value={selectedCat()} onChange={handleCategoryChange}>
                     {categories()?.map((cat) => {
                         return <option value={cat.id}>{cat.title}</option>;
                     })}
