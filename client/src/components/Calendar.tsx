@@ -184,6 +184,10 @@ const DurationHourBlock: Component<{
     dur: DurationSplit;
 }> = (props) => {
     const { dur, currHour, hourIndex, currDay, dayIndex, titles, shouldDisplayTitle, color } = props;
+
+    const handleRedirectClick = () => {
+        window.location.href = `/editor/schedule/${dur.id}`;
+    }; 
     return (
         <div
             id={currHour - 1 === hourIndex && currDay === dayIndex ? "scrollTo" : ""}
@@ -193,11 +197,11 @@ const DurationHourBlock: Component<{
             style={{
                 "background-color": color,
                 opacity: "0.7",
+                cursor: "pointer"
             }}
         >
 
-        <A href={`/editor/schedule/${dur.id}`}>
-            <div class={styles.hourBlockContent}>
+            <div onClick={handleRedirectClick} class={styles.hourBlockContent}>
                 <div class={styles.hourBlockInner}>
                     {shouldDisplayTitle
                         ? titles?.map((t) => (
@@ -209,7 +213,6 @@ const DurationHourBlock: Component<{
                         : ""}
                 </div>
             </div>
-        </A>
         </div>
     );
 };
