@@ -4,14 +4,18 @@ import apiUtil from "../utils/apiUtil";
 import { daysOfWeek } from "../utils/daysOfWeek";
 
 export const ScheduleEditor: Component = () => {
-    const [startHour, setStartHour] = createSignal<string>("0");
-    const [endHour, setEndHour] = createSignal<string>("1");
     const [hours, _setHours] = createSignal<number[]>([...Array(24).keys()]);
-    const [daysRecurr, setDaysRecurr] = createSignal<number[]>([...Array(7).fill(0)]);
     const [categories, setCategories] = createSignal<Category[]>();
-    const [selectedCat, setSelectedCat] = createSignal<string>();
-    const [color, setColor] = createSignal("#00d5ff");
-    const [duration, setDuration] = createSignal<Duration>();
+    const [duration, setDuration] = createSignal<Duration>({
+        id: -1,
+        category_id: 0,
+        start_hour: 0,
+        end_hour: 1,
+        color: "#000000",
+        owner_id: 1,
+        recurring_days: [0,0,0,0,0,0,0],
+        titles: []
+    });
     const [id, setId] = createSignal<string>();
 
     const api = apiUtil();
@@ -24,53 +28,60 @@ export const ScheduleEditor: Component = () => {
         if (!id) return console.log("no id");
 
         const durationReq = await api.get<Duration>(`/duration/${id}`);
-
-        setColor(durationReq.color);
-        setDaysRecurr(durationReq.recurring_days);
-        setStartHour(durationReq.start_hour.toString());
-        setEndHour(durationReq.end_hour.toString());
-        setSelectedCat(durationReq.category_id.toString());
         setDuration(durationReq);
     });
     const handleTimeInput = (value: string, name: "start" | "end") => {
-        if (name === "start") {
-            setStartHour(value);
-        } else {
-            setEndHour(value);
-        }
+        setDuration((prev) => {
+            prev!.start_hour = name === "start" ? parseInt(value, 10) : prev!.start_hour;
+            prev!.end_hour = name === "end" ? parseInt(value, 10) : prev!.end_hour;
+
+            return prev; 
+        });
     };
 
     const handleRecurrChange = (evt: any) => {
-        setDaysRecurr((prev) => {
-            if (prev[evt.currentTarget.name] === 1) {
-                prev[evt.currentTarget.name] = 0;
+        setDuration((prev) => {
+            const rec_days = prev!.recurring_days;
+
+            if (rec_days![evt.currentTarget.name] === 1) {
+                rec_days![evt.currentTarget.name] = 0;
             } else {
-                prev[evt.currentTarget.name] = 1;
+                rec_days![evt.currentTarget.name] = 1;
             }
+            prev!.recurring_days = [...rec_days];
             return prev;
+
         });
     };
 
     const handleCategoryChange = (evt: any) => {
-        setSelectedCat(evt.currentTarget.value);
+        setDuration((prev) => {
+            prev!.category_id = parseInt(evt.currentTarget.value, 10);
+
+            return prev; 
+        });
     };
 
     const handleColorInput = (evt: any) => {
-        setColor(evt.currentTarget.value);
+        setDuration((prev) => {
+            prev!.color = evt.currentTarget.value;
+
+            return prev; 
+        });
     };
 
     const handleSubmit = async (evt: any) => {
         evt.preventDefault();
 
-        if (parseInt(startHour(), 10) > parseInt(endHour(), 10)) {
+        if (duration()!.start_hour > duration()!.end_hour) {
             return console.log("start hour greater than end hour");
         }
         const polyDur: Omit<Duration, "titles" | "id"> = {
-            color: color(),
-            category_id: parseInt(selectedCat()!, 10),
-            recurring_days: daysRecurr(),
-            start_hour: parseInt(startHour(), 10),
-            end_hour: parseInt(endHour(), 10),
+            color: duration()!.color,
+            category_id: duration()!.category_id,
+            recurring_days: duration()!.recurring_days,
+            start_hour: duration()!.start_hour,
+            end_hour:  duration()!.end_hour,
             owner_id: 1,
         };
 
@@ -95,8 +106,8 @@ export const ScheduleEditor: Component = () => {
                         name={i.toString()}
                         onChange={handleRecurrChange}
                         type="checkbox"
-                        value={daysRecurr()[i]}
-                        checked={daysRecurr()[i] === 1}
+                        value={duration()?.recurring_days[i]}
+                        checked={duration()?.recurring_days[i] === 1}
                     />
                     {day}{" "}
                 </label>
@@ -105,7 +116,7 @@ export const ScheduleEditor: Component = () => {
             <br />
             <span>Start time: </span>
             <select
-                value={startHour()}
+                value={duration()?.start_hour}
                 onChange={(evt) => handleTimeInput(evt.currentTarget.value, "start")}
             >
                 {hours().map((hour) => (
@@ -116,7 +127,7 @@ export const ScheduleEditor: Component = () => {
             <br />
             <span>End time: </span>
             <select
-                value={endHour()}
+                value={duration()?.end_hour}
                 onChange={(evt) => handleTimeInput(evt.currentTarget.value, "end")}
             >
                 {function () {
@@ -133,7 +144,7 @@ export const ScheduleEditor: Component = () => {
             <br />
             <div>Category</div>
             <div>
-                <select value={selectedCat()} onChange={handleCategoryChange}>
+                <select value={duration()?.category_id} onChange={handleCategoryChange}>
                     {categories()?.map((cat) => {
                         return <option value={cat.id}>{cat.title}</option>;
                     })}
@@ -143,7 +154,7 @@ export const ScheduleEditor: Component = () => {
                 <input
                     onInput={handleColorInput}
                     type="color"
-                    value={color()}
+                    value={duration()?.color}
                 />
             </div>
 
