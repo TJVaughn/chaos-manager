@@ -184,4 +184,15 @@ pub async fn update_duration(_req: HttpRequest, params: web::Json<Duration>) -> 
     }
 }
 
+// #[delete("/duration/{id}")]
+pub async fn delete_duration_by_id(info: Path<InfoPathId>) -> impl Responder {
+    let id = info.id;
+    let client = connect_to_db().await;
 
+    client
+        .execute("DELETE FROM public.duration WHERE id=$1", &[&id])
+        .await
+        .expect("error deleting duration");
+
+    return HttpResponse::Ok().json("Deleted Item");
+}

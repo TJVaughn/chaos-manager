@@ -38,7 +38,8 @@ fn routes(app: &mut web::ServiceConfig) {
             )
             .service(
                 web::resource("duration/{id}")
-                    .route(web::get().to(duration::get_duration_by_id)),
+                    .route(web::get().to(duration::get_duration_by_id))
+                    .route(web::delete().to(duration::delete_duration_by_id)),
             )
             .service(
                 web::resource("durations")
