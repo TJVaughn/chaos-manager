@@ -71,7 +71,7 @@ pub async fn connect_to_db() -> Client {
             category_id INT NOT NULL REFERENCES public.category,
             start_hour INT NOT NULL,
             end_hour INT NOT NULL,
-            day_as_int INT NOT NULL,
+            recurring_days INT[] NOT NULL,
             color VARCHAR(31)
         );",
         )
